@@ -1,37 +1,17 @@
-## Welcome to GitHub Pages
+# 2021 VA IEEE Covid Challenge
+## Choropleth Data Tracking
+Team drumroll please's github repository for VA IEEE Covid Challenge 2021
 
-You can use the [editor on GitHub](https://github.com/KGB-8375/ieee-challenge-choropleth/edit/main/docs/index.md) to maintain and preview the content for your website in Markdown files.
+## Description of Challenge:
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+Despite efforts from the Virginia Department of Health (VDH), data for tracking the COVID-19 virus throughout Virginia
+is difficult and cryptic for the average person. Even with visual elements such as choropleths (multicolored maps representing
+case numbers), trends such as change in daily cases largely remains hidden. Furthermore, due to poor choices in color schemes,
+the color difference between a couple thousand cases looks the same as several thousand cases. Our task is to create a new interface
+that is more accessable, easier to understand, and makes the data more clear and easily understood by average people.
 
-### Markdown
+## Our solution path:
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Our project is still very early in development, however we plan on making an interactive webpage using the R programming language.
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/KGB-8375/ieee-challenge-choropleth/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Current snapshot of WIP [Choropleth](choropleth.html)
