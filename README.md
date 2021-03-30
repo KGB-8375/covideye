@@ -1,6 +1,6 @@
-# 2021 VA IEEE Covid Challenge
+# IEEE Richmond Pandemic Challenge (2021)
 ## Choropleth Data Tracking
-Team drumroll please's github repository for VA IEEE Covid Challenge 2021
+Team drumroll please's github repository for RVA CovidView
 
 ## Description of Challenge
 
