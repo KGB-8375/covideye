@@ -54,4 +54,6 @@ m <- leaflet(spdf) %>%
 m
 
 library(htmlwidgets)
-saveWidget(m, file="choropleth.html")
+saveWidget(m, file=paste0(getwd(), "/docs/choropleth.html"))
+
+           
