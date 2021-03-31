@@ -1,6 +1,7 @@
 # Get covid data
 library("RSocrata")
-covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
+covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json",
+                          app_token = Sys.getenv("SOCRATA_TOKEN"))
 
 # Get most recent data (end of dataset)
 new_dat <- subset(covid_dat, report_date == tail(covid_dat, n=1)$report_date)

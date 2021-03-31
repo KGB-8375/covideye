@@ -21,5 +21,8 @@ Our team *Drumroll Please* is made up of three undergrad students in the Henrico
 ## Our solution path
 
 Our project is still very early in development, however we plan on making an interactive web app using the R programming language's
-`shiny` package, incorperating interactive elements such as [choropleths](https://kgb-8375.github.io/ieee-challenge-choropleth/choropleth.html)
+`shiny` package, incorperating interactive elements such as choropleths
 to visualize an up-to-date data feed from the [Virginia Department of Health](https://www.vdh.virginia.gov/coronavirus/).
+
+A live demo of our app can be viewed
+[here](https://rvacovidview.shinyapps.io/ieee-challenge-chloropleth/)!
