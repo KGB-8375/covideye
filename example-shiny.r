@@ -1,15 +1,21 @@
 ## Import Libraries ############################################################
 library(shiny)
 library(RSocrata)
-library(geojsonio)
+library(rgdal)
 library(leaflet)
 ## Static information (Doesn't change until app restarted) #####################
 
 # Import datasets
 covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json",
                           app_token = Sys.getenv("SOCRATA_TOKEN"))
-geo_dat <- geojson_read("https://opendata.arcgis.com/datasets/e3c8822a4adc4fc1a542a233893a46d4_0.geojson", 
-                               what = "sp")
+spdf <- readOGR(
+  dsn = paste0(getwd(),"/DATA/shapefile"),
+  layer = "cb_2019_us_county_500k"
+)
+
+# This is for the entire country, we only need VA
+geo_dat <- subset(spdf, spdf@data$STATEFP == "51")
+rm(spdf)
 
 # Create custom color bins
 mybins <- c(0, 1000, 2000, 5000, 10000, 20000, 40000, 60000, Inf)
@@ -17,6 +23,11 @@ mybins <- c(0, 1000, 2000, 5000, 10000, 20000, 40000, 60000, Inf)
 # Set minimum and maximum selection dates
 max_date <- as.character(tail(covid_dat$report_date, n = 1))
 min_date <- as.character(head(covid_dat$report_date, n = 1))
+
+# County names
+tmp <- subset(covid_dat, as.character(report_date) == max_date)
+county_name <- tmp$locality[order(match(tmp$fips, geo_dat$GEOID))]
+rm(tmp)
 
 ## UI Information  (HTML Page) #################################################
 
@@ -55,7 +66,7 @@ server <- function(input, output) {
     
     # Generate tooltip text
     mytext <- paste(
-      "County: ", geo_dat$NAMELSAD, "</br>",
+      "<b>", county_name, "</b></br>",
       "Covid Cases: ", dated_cases, "</br>",
       "Hospitilizations: ", dated_hospt, "</br>",
       "Deaths: ", dated_death, "</br>",
@@ -75,9 +86,9 @@ server <- function(input, output) {
         # Make tiles opaque
         fillOpacity = 1.0,
         # Make border white
-        color = "white",
+        color = "grey",
         # Make border skinny
-        weight = 0.3,
+        weight = 0.6,
         # Add tooltip info
         label = mytext,
         # Change tooltip styling
