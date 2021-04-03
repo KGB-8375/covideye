@@ -3,31 +3,41 @@ library(shiny)
 library(RSocrata)
 library(rgdal)
 library(leaflet)
+library(dplyr)
+library(sp)
 ## Static information (Doesn't change until app restarted) #####################
 
 # Import datasets
-covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json",
-                          app_token = Sys.getenv("SOCRATA_TOKEN"))
+covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
+
 spdf <- readOGR(
   dsn = paste0(getwd(),"/DATA/shapefile"),
   layer = "cb_2019_us_county_500k"
 )
 
-# This is for the entire country, we only need VA
-geo_dat <- subset(spdf, spdf@data$STATEFP == "51")
-rm(spdf)
+# Convert data to correct types
+covid_dat$report_date      <- as.Date(covid_dat$report_date)
+covid_dat$total_cases      <- as.numeric(covid_dat$total_cases)
+covid_dat$deaths           <- as.numeric(covid_dat$deaths)
+covid_dat$hospitalizations <- as.numeric(covid_dat$hospitalizations)
+
+# Get just the data for VA
+spdf <- subset(spdf, STATEFP == "51")
+
+# Now kiss (merge spatial data with covid data)
+# This uses a relatively large (~280 mb) amount of memory
+spdf <- merge(spdf, covid_dat, 
+              by.x = "GEOID", by.y = "fips", 
+              duplicateGeoms = T)
 
 # Create custom color bins
-mybins <- c(0, 1000, 2000, 5000, 10000, 20000, 40000, 60000, Inf)
+# Old bins were based on number, new one is %
+#mybins <- c(0, 1000, 2000, 5000, 10000, 20000, 40000, 60000, Inf)
+mybins <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
 
 # Set minimum and maximum selection dates
-max_date <- as.character(tail(covid_dat$report_date, n = 1))
-min_date <- as.character(head(covid_dat$report_date, n = 1))
-
-# County names
-tmp <- subset(covid_dat, as.character(report_date) == max_date)
-county_name <- tmp$locality[order(match(tmp$fips, geo_dat$GEOID))]
-rm(tmp)
+max_date <- tail(covid_dat$report_date, n = 1)
+min_date <- head(covid_dat$report_date, n = 1)
 
 ## UI Information  (HTML Page) #################################################
 
@@ -51,36 +61,36 @@ server <- function(input, output) {
     # First we need to calculate all the data for the leaflet
     
     # Get data subset for date
-    dated_dat <- subset(covid_dat, as.Date(report_date) == input$date)
+    selection <- subset(spdf, report_date == input$date)
     
-    # Get data for cases (FIPS sorted)
-    dated_cases <- as.integer(dated_dat$total_cases[order(match(dated_dat$fips, geo_dat$GEOID))])
-    # Get data for hospitilizations (FIPS sorted)
-    dated_hospt <- as.integer(dated_dat$hospitalizations[order(match(dated_dat$fips, geo_dat$GEOID))])
-    # Get data for deaths (FIPS sorted)
-    dated_death <- as.integer(dated_dat$deaths[order(match(dated_dat$fips, geo_dat$GEOID))])
+    # Generate bins based on percentages
+    # Only use 3 sig figs & whole numbers
+    bins_f <- unique(ceiling(signif(mybins * max(selection$total_cases),
+                                    digits = 3)))
     
     # Create color palette
-    mypalette <- colorBin(palette = "YlOrRd", domain = dated_cases,
-                          na.color = "black", bins=mybins )
+    mypalette <- colorBin(palette = "YlOrRd", 
+                          domain = selection$total_cases,
+                          na.color = "black",
+                          bins = bins_f)
     
     # Generate tooltip text
     mytext <- paste(
-      "<b>", county_name, "</b></br>",
-      "Covid Cases: ", dated_cases, "</br>",
-      "Hospitilizations: ", dated_hospt, "</br>",
-      "Deaths: ", dated_death, "</br>",
+      "<b>", selection$locality, "</b></br>",
+      "Covid Cases: ", selection$total_cases, "</br>",
+      "Hospitilizations: ", selection$hospitalizations, "</br>",
+      "Deaths: ", selection$deaths, "</br>",
       sep = ""
     ) %>% lapply(htmltools::HTML)
     
     # Finally, create actual choropleth using Leaflet
-    leaflet(geo_dat) %>%
+    leaflet(selection) %>%
       # Set default view location & zoom level
       setView( lat = 37.4316, lng = -79.6569, zoom = 6) %>%
       # Add data to the screen
       addPolygons(
         # Get color
-        fillColor = ~mypalette(dated_cases),
+        fillColor = ~mypalette(selection$total_cases),
         # Add thin border
         stroke = T,
         # Make tiles opaque
@@ -99,7 +109,7 @@ server <- function(input, output) {
         )
       ) %>%
       # And lastly add a legend to know what each color means
-      addLegend( pal=mypalette, values=dated_cases, opacity = 0.9,
+      addLegend( pal=mypalette, values=selection$total_cases, opacity = 0.9,
                  title = "Total Covid Cases", position = "bottomleft" )
   })
 }

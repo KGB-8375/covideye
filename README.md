@@ -25,4 +25,4 @@ Our project is still very early in development, however we plan on making an int
 to visualize an up-to-date data feed from the [Virginia Department of Health](https://www.vdh.virginia.gov/coronavirus/).
 
 A live demo of our app can be viewed
-[here](https://rvacovidview.shinyapps.io/ieee-challenge-chloropleth/)!
+[here](https://rvacovidview.shinyapps.io/dashboard/)!
