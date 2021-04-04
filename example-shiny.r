@@ -11,7 +11,7 @@ library(sp)
 covid_dat <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
 
 spdf <- readOGR(
-  dsn = paste0(getwd(),"/DATA/shapefile"),
+  dsn = "./app/DATA/shapefile",
   layer = "cb_2019_us_county_500k"
 )
 
@@ -85,8 +85,9 @@ server <- function(input, output) {
     
     # Finally, create actual choropleth using Leaflet
     leaflet(selection) %>%
-      # Set default view location & zoom level
-      setView( lat = 37.4316, lng = -79.6569, zoom = 6) %>%
+      # Crop view to just show VA
+      fitBounds( lat1 = 36.585007, lng1 = -83.714340,
+                 lat2 = 39.447387, lng2 = -74.869230) %>%
       # Add data to the screen
       addPolygons(
         # Get color
@@ -110,7 +111,7 @@ server <- function(input, output) {
       ) %>%
       # And lastly add a legend to know what each color means
       addLegend( pal=mypalette, values=selection$total_cases, opacity = 0.9,
-                 title = "Total Covid Cases", position = "bottomleft" )
+                 title = "Total Covid Cases", position = "topleft" )
   })
 }
 
