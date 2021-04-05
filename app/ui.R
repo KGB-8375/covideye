@@ -7,22 +7,27 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
     ## DASHBOARD PAGE ##########################################################
     tabPanel("Dashboard",
         headerPanel("Our State"),
+        htmlOutput("db_stats"),
         htmlOutput("db_date_ui"),
+        #checkboxInput("db_map_adj", ""),
         leafletOutput("db_map"),
         headerPanel("Daily Rates"),
         htmlOutput("db_date_rng_ui"),
         plotlyOutput("db_rates")
         #headerPanel("County with Most Cases"),
-        #plotOutput("db_highest_cases"),
+        #plotlyOutput("db_highest_cases")
         #headerPanel("County with Highest Daily Rate"),
-        #plotOutput("db_highest_rate"),
+        #plotlyOutput("db_highest_rate"),
         #headerPanel("County with Largest Jump in Cases"),
-        #plotOutput("db_highest_jump")
+        #plotlyOutput("db_highest_jump")
     ),
     ## BY COUNTRY PAGE #########################################################
-    tabPanel("By County"),
+    tabPanel("By County",
+        "This page is intentionally blank"),
     ## DEMOGRAPHICS PAGE #######################################################
-    tabPanel("Demographics"),
+    tabPanel("Demographics",
+        "This page is intentionally blank"),
     ## ABOUT PAGE ##############################################################
-    tabPanel("About")
+    tabPanel("About",
+        "This page is intentionally blank")
 ))

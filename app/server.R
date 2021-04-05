@@ -10,26 +10,38 @@ library(plotly)
 ## STATIC DATA #################################################################
 
 ## Retrieve Data
+
 cases <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
 confd <- read.socrata("https://data.virginia.gov/resource/uqs3-x7zh.json")
+pop   <- read.socrata("https://data.virginia.gov/resource/5s4f-hthh.json")
 spdf  <- readOGR(
     dsn = "./DATA/shapefile",
     layer = "cb_2019_us_county_500k"
 )
 
 ##  Fix Data
-cases$report_date      <- as.Date(cases$report_date)
-cases$total_cases      <- as.numeric(cases$total_cases)
-cases$deaths           <- as.numeric(cases$deaths)
-cases$hospitalizations <- as.numeric(cases$hospitalizations)
 
-confd$report_date      <- as.Date(confd$report_date)
-confd$number_of_cases  <- as.numeric(confd$number_of_cases)
+# Changing types
+cases$report_date       <- as.Date(cases$report_date)
+cases$total_cases       <- as.numeric(cases$total_cases)
+cases$deaths            <- as.numeric(cases$deaths)
+cases$hospitalizations  <- as.numeric(cases$hospitalizations)
+
+confd$report_date       <- as.Date(confd$report_date)
+confd$number_of_cases   <- as.numeric(confd$number_of_cases)
+
+pop$population_estimate <- as.numeric(pop$population_estimate)
+
 # Delete unneeded cols
 cases <- cases %>% select(!c(vdh_health_district))
 
 confd <- confd %>% select(!c(number_of_deaths, 
                              number_of_hospitalizations))
+
+pop <- subset(pop, year == max(year))
+pop <- pop %>% select(!c(health_district,
+                         health_region, year)) %>%
+    rename(est = population_estimate)
 
 # use only VA info
 spdf <- subset(spdf, STATEFP == "51")
@@ -40,8 +52,8 @@ spdf <- merge(spdf, cases, duplicateGeoms = TRUE)
 rm(cases)
 
 # split confirmed and probable cases
-confd.c <- subset(confd, case_status == "Confirmed")
-confd.p <- subset(confd, case_status == "Probable")
+confd.c <- subset(confd, case_status == "Confirmed") %>% arrange(report_date)
+confd.p <- subset(confd, case_status == "Probable")  %>% arrange(report_date)
 # recombine as columns
 confd <- data.frame(report_date = confd.c$report_date,
                     cases.c = confd.c$number_of_cases,
@@ -49,9 +61,18 @@ confd <- data.frame(report_date = confd.c$report_date,
 # remove temp values
 rm(confd.c, confd.p)
 
+# get total current population estimates for map
+pop.total <- pop %>%
+    group_by(fips) %>%
+    summarize(pop = sum(est))
+spdf <- merge(spdf, pop.total)
+rm(pop.total)
+
 ## Custom data
+
 # Color bins for main choropleth
-mybins <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
+categories.total <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
+categories.rate  <- c(0, 25, 50, 75, Inf) / 100
 # Min and max dates in data
 spdf.min <- min(spdf$report_date)
 spdf.max <- max(spdf$report_date)
@@ -60,6 +81,11 @@ confd.min <- min(confd$report_date)
 confd.max <- max(confd$report_date)
 
 ## Generated Data
+
+# Get the covid cases based on population density
+spdf@data <- spdf@data %>%
+    mutate(cases_pop = total_cases * 100000 / pop)
+
 # Calculate the daily rate of confirmed vs probable cases
 confd <- confd %>%
     # Sort by report date
@@ -73,10 +99,26 @@ confd <- confd %>%
     # 7-day moving average of total
     mutate(avg = rollmean(rate.t, 7, fill = NA))
 
+# Current totals of cases, etc;
+stats.c = sum(spdf$total_cases[spdf$report_date == spdf.max])
+stats.h = sum(spdf$hospitalizations[spdf$report_date == spdf.max])
+stats.d = sum(spdf$deaths[spdf$report_date == spdf.max])
+
 ## SERVER FUNCTIONS ############################################################
 shinyServer(function(input, output) {
     
     ## DASHBOARD PAGE ##########################################################
+    
+    # Quick Statistics
+    output$db_stats <- renderUI({
+        paste0("Total Cases: ", stats.c, "</br>",
+               "Total Hospitalizations: ", stats.h, "</br>",
+               "Total Deaths: ", stats.d, "</br>") %>%
+            lapply(htmltools::HTML)
+    })
+    
+    ## Map Section
+    
     # Date selector
     output$db_date_ui <- renderUI({
         dateInput("db_date", "Select Date:",
@@ -84,6 +126,7 @@ shinyServer(function(input, output) {
                   max = spdf.max,
                   value = spdf.max)
     })
+    
     # Date Selection
     db_date_sel <- reactive({
         # Prevent errors while loading ui
@@ -97,34 +140,31 @@ shinyServer(function(input, output) {
     
     # Main choropleth map
     output$db_map <- renderLeaflet({
-        # Convert bins from percentages to numbers (Rounded)
-        bins_f <- unique(ceiling(signif(mybins * max(db_date_sel()$total_cases),
-                                 digits = 3)))
+        # Convert bins from percentages to numbers
+        categories <- categories.total * max(db_date_sel()$total_cases)
+        # Round and use only unique values
+        categories <- unique(ceiling(signif(categories, digits = 3)))
         
         # Create tooltip
-        tooltip <- paste(
-                    "<b>", db_date_sel()$locality, "</b></br>",
-                    "Covid Cases: ", db_date_sel()$total_cases, "</br>",
-                    "Hospitilizations: ", db_date_sel()$hospitalizations, "</br>",
-                    "Deaths: ", db_date_sel()$deaths, "</br>",
-                    sep = "") %>% 
-                  lapply(htmltools::HTML)
+        tooltip <- paste0(
+            "<b>", db_date_sel()$locality, "</b></br>",
+            "Covid Cases: ", db_date_sel()$total_cases, "</br>",
+            "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
+            "Deaths: ", db_date_sel()$deaths, "</br>") %>% 
+            lapply(htmltools::HTML)
         
         # Apply color shading to bins
-        mycols <- colorBin(palette = "YlOrRd", 
+        colorF <- colorBin(palette = "YlOrRd", 
                            domain = db_date_sel()$total_cases,
                            na.color = "black",
-                           bins = bins_f)
+                           bins = categories)
         
         # Create Actual map
         leaflet(db_date_sel()) %>%
-        # Crop view to just show VA
-        fitBounds( lat1 = 36.585007, lng1 = -83.714340,
-                   lat2 = 39.447387, lng2 = -74.869230) %>%
         # Polygon data
         addPolygons(
             # Get color
-            fillColor = ~mycols(db_date_sel()$total_cases),
+            fillColor = ~colorF(db_date_sel()$total_cases),
             # Make tiles opaque
             fillOpacity = 1.0,
             # Add thin gray border
@@ -137,9 +177,11 @@ shinyServer(function(input, output) {
                 direction = "auto"
             )) %>%
         # And lastly add a legend
-        addLegend( pal=mycols, values=db_date_sel()$total_cases, opacity = 0.9,
+        addLegend( pal=colorF, values=db_date_sel()$total_cases, opacity = 0.9,
                    title = "Total Covid Cases", position = "topleft" )
     })
+    
+    ## Daily Rates Section
     
     # Date range input
     output$db_date_rng_ui <- renderUI({
@@ -163,28 +205,51 @@ shinyServer(function(input, output) {
     
     # Create daily rates diagram
     output$db_rates <- renderPlotly({
-        #tooltip_bars <- paste0(
-        #    "Date: ", db_rates_data()$report_date, "\n",
-        #    "Cases: ", db_rates_data()$rate, "\n",
-        #    "Status: ", db_rates_data()$case_status, "\n"
-        #)
-        
-        #tooltip_avg <- paste0(
-        #    "Report Date: ", db_total_rates_data()$report_date, "\n",
-        #    "Total Cases: ", db_total_rates_data()$total_rate, "\n",
-        #    "7-day Moving Average: ", db_total_rates_data()$rolling_rate, "\n"
-        #)
-        
+        # Tooltip for confirmed
+        text_conf <- paste0(
+            "Date: ", db_rates_data()$report_date, "\n",
+            "Cases: ", db_rates_data()$rate.c, "\n",
+            "Status: Confirmed\n"
+        )
+        # Tooltip for probable
+        text_prob <- paste0(
+            "Date: ", db_rates_data()$report_date, "\n",
+            "Cases: ", db_rates_data()$rate.p, "\n",
+            "Status: Probable\n"
+        )
+        # Tooltip for average line
+        text_avg <- paste0(
+            "Report Date: ", db_rates_data()$report_date, "\n",
+            "Total Cases: ", db_rates_data()$rate.t, "\n",
+            "7-day Moving Average: ", db_rates_data()$avg, "\n"
+        )
+        # Generate plot
         plot_ly(
+            # Confirmed rates
             db_rates_data(),
-            x = ~report_date, type = "bar",
-            y = ~rate.c, name = "Confirmed"
+            x = ~report_date, type = 'bar',
+            hoverinfo = 'text',
+            y = ~rate.c, name = "Confirmed",
+            text = text_conf, color = I("darkred")
         ) %>% add_trace(
-            y = ~rate.p, name = "Probable"
+            # Unconfirmed rates
+            y = ~rate.p, name = "Probable",
+            text = text_prob, color = I("red")
+        ) %>% add_trace(
+            # Average lines
+            y = ~avg, name = "7-Day Average",
+            text = text_avg, line = list(
+                color = 'black'
+            ),
+            type = 'scatter', mode = 'lines'
         ) %>% layout (
-            yaxis = list(title = "Cases"), barmode = "group"
+            # Labels & Setup
+            yaxis = list(title = "Cases"),
+            xaxis = list(title = "Report Date"),
+            barmode = 'group'
         )
     })
+    
     ## BY COUNTRY PAGE #########################################################
     ## DEMOGRAPHICS PAGE #######################################################
 })
