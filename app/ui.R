@@ -35,5 +35,5 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
         "This page is intentionally blank"),
     ## ABOUT PAGE ##############################################################
     tabPanel("About",
-        "This page is intentionally blank")
+        includeMarkdown("./about.md"))
 ))
