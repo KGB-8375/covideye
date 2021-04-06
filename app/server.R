@@ -1,12 +1,13 @@
 ## LIBRARIES ###################################################################
-library(shiny)
-library(rgdal)
-library(RSocrata)
-library(sp)
-library(leaflet)
-library(dplyr)
-library(zoo)
-library(plotly)
+library(shiny)     # Building interactive websites
+library(rgdal)     # Reading spatial data files
+library(RSocrata)  # Reading data from socrata sites (VDH)
+library(sp)        # Working with spatial data
+library(leaflet)   # Graphing interactive maps
+library(dplyr)     # Arranging & modifying data
+library(zoo)       # Calculating a rolling mean
+library(plotly)    # Graphing interactive plots
+library(BAMMtools) # Jenks breaks
 ## STATIC DATA #################################################################
 
 ## Retrieve Data
@@ -71,8 +72,8 @@ rm(pop.total)
 ## Custom data
 
 # Color bins for main choropleth
-categories.total <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
-categories.rate  <- c(0, 25, 50, 75, Inf) / 100
+#categories.total <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
+#categories.rate  <- c(0, 25, 50, 75, Inf) / 100
 # Min and max dates in data
 spdf.min <- min(spdf$report_date)
 spdf.max <- max(spdf$report_date)
@@ -84,7 +85,9 @@ confd.max <- max(confd$report_date)
 
 # Get the covid cases based on population density
 spdf@data <- spdf@data %>%
-    mutate(cases_pop = total_cases * 100000 / pop)
+    mutate(total_cases.adj = total_cases * 100000 / pop,
+           hospitalizations.adj = hospitalizations * 100000 / pop,
+           deaths.adj = deaths * 100000 / pop)
 
 # Calculate the daily rate of confirmed vs probable cases
 confd <- confd %>%
@@ -105,7 +108,7 @@ stats.h = sum(spdf$hospitalizations[spdf$report_date == spdf.max])
 stats.d = sum(spdf$deaths[spdf$report_date == spdf.max])
 
 ## SERVER FUNCTIONS ############################################################
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
     
     ## DASHBOARD PAGE ##########################################################
     
@@ -138,24 +141,82 @@ shinyServer(function(input, output) {
         }
     })
     
+    # Change legend title for selection
+    db_target_title <- reactive({
+        if(input$db_pop_adj) {
+            switch (input$db_mode,
+                    pop="Total Population",
+                    cases="Cases per 100k",
+                    hosp="Hospitalizations per 100k",
+                    deaths="Deaths per 100k"
+            )
+        } else {
+            switch (input$db_mode,
+                    pop="Total Population",
+                    cases="Total Cases",
+                    hosp="Total Hospitalizations",
+                    deaths="Total Deaths"
+            )
+        }
+    })
+    
+    # Change choropleth target
+    db_target_val <- reactive({
+        if(input$db_pop_adj) {
+            switch (input$db_mode,
+                    pop=db_date_sel()$pop,
+                    cases=db_date_sel()$total_cases.adj,
+                    hosp=db_date_sel()$hospitalizations.adj,
+                    deaths=db_date_sel()$deaths.adj
+            )
+        } else {
+            switch (input$db_mode,
+                    pop=db_date_sel()$pop,
+                    cases=db_date_sel()$total_cases,
+                    hosp=db_date_sel()$hospitalizations,
+                    deaths=db_date_sel()$deaths
+            )
+        }
+    })
+    
+    # Change choropleth color scheme
+    db_target_col <- reactive({
+        switch (input$db_mode,
+                pop="Greens",
+                cases="YlOrRd",
+                hosp="Purples",
+                deaths="Greys"
+        )
+    })
+    
     # Main choropleth map
     output$db_map <- renderLeaflet({
-        # Convert bins from percentages to numbers
-        categories <- categories.total * max(db_date_sel()$total_cases)
-        # Round and use only unique values
+        # Use Jenks Natural Breaks to find *8* bin categories
+        categories <- getJenksBreaks(db_target_val(), 9)
+        
+        # Beautify breaks
         categories <- unique(ceiling(signif(categories, digits = 3)))
+        categories[length(categories)] <- Inf
+        categories[1] <- 0
         
         # Create tooltip
         tooltip <- paste0(
             "<b>", db_date_sel()$locality, "</b></br>",
             "Covid Cases: ", db_date_sel()$total_cases, "</br>",
             "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
-            "Deaths: ", db_date_sel()$deaths, "</br>") %>% 
+            "Deaths: ", db_date_sel()$deaths, "</br>",
+            "Population: ", db_date_sel()$pop, "</br></br>",
+            "Cases per 100k: ", 
+            floor(db_date_sel()$total_cases.adj), "</br>",
+            "Hospitalizations per 100k: ", 
+            floor(db_date_sel()$hospitalizations.adj), "</br>",
+            "Deaths per 100k: ", 
+            floor(db_date_sel()$deaths.adj), "</br>") %>% 
             lapply(htmltools::HTML)
         
         # Apply color shading to bins
-        colorF <- colorBin(palette = "YlOrRd", 
-                           domain = db_date_sel()$total_cases,
+        colorF <- colorBin(palette = db_target_col(), 
+                           domain = db_target_val(),
                            na.color = "black",
                            bins = categories)
         
@@ -164,7 +225,7 @@ shinyServer(function(input, output) {
         # Polygon data
         addPolygons(
             # Get color
-            fillColor = ~colorF(db_date_sel()$total_cases),
+            fillColor = ~colorF(db_target_val()),
             # Make tiles opaque
             fillOpacity = 1.0,
             # Add thin gray border
@@ -177,8 +238,8 @@ shinyServer(function(input, output) {
                 direction = "auto"
             )) %>%
         # And lastly add a legend
-        addLegend( pal=colorF, values=db_date_sel()$total_cases, opacity = 0.9,
-                   title = "Total Covid Cases", position = "topleft" )
+        addLegend( pal=colorF, values=db_target_val(), opacity = 0.9,
+                   title = db_target_title(), position = "topleft" )
     })
     
     ## Daily Rates Section
@@ -221,7 +282,7 @@ shinyServer(function(input, output) {
         text_avg <- paste0(
             "Report Date: ", db_rates_data()$report_date, "\n",
             "Total Cases: ", db_rates_data()$rate.t, "\n",
-            "7-day Moving Average: ", db_rates_data()$avg, "\n"
+            "7-day Moving Average: ", floor(db_rates_data()$avg), "\n"
         )
         # Generate plot
         plot_ly(
