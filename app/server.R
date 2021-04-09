@@ -203,8 +203,8 @@ shinyServer(function(input, output, session) {
         )
     })
     
-    # Main choropleth map
-    output$db_map <- renderLeaflet({
+    # Categories for map
+    db_map_categories <- reactive({
         # Use Jenks Natural Breaks to find *8* bin categories
         categories <- getJenksBreaks(db_target_val(), 9)
         
@@ -213,8 +213,20 @@ shinyServer(function(input, output, session) {
         categories[length(categories)] <- Inf
         categories[1] <- 0
         
-        # Create tooltip
-        tooltip <- paste0(
+        return(categories)
+    })
+    
+    # Function to color map
+    db_map_cols <- reactive({
+        colorBin(palette = db_target_col(),
+                 domain = db_target_val(),
+                 bins = db_map_categories(),
+                 na.color = "black")
+    })
+    
+    # Tooltips for map
+    db_map_tooltip <- reactive({
+        paste0(
             "<b>", db_date_sel()$locality, "</b></br>",
             "Covid Cases: ", db_date_sel()$total_cases, "</br>",
             "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
@@ -225,35 +237,54 @@ shinyServer(function(input, output, session) {
             "Hospitalizations per 100k: ", 
             floor(db_date_sel()$hospitalizations.adj), "</br>",
             "Deaths per 100k: ", 
-            floor(db_date_sel()$deaths.adj), "</br>") %>% 
-            lapply(htmltools::HTML)
+            floor(db_date_sel()$deaths.adj), "</br>"
+        ) %>% 
+        lapply(htmltools::HTML)
+    })
+    
+    # Static parts of map
+    output$db_map <- renderLeaflet({
+        # Set default view to bounding box of VA
+        bounds <- bbox(spdf) %>% as.vector()
+        leaflet(spdf) %>%
+            fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
+    })
+    
+    # Update map polygons
+    observe({
+        pal <- db_map_cols()
         
-        # Apply color shading to bins
-        colorF <- colorBin(palette = db_target_col(), 
-                           domain = db_target_val(),
-                           na.color = "black",
-                           bins = categories)
+        leafletProxy("db_map", data = db_date_sel()) %>%
+            clearShapes() %>%
+            addPolygons(
+                # Set color
+                fillColor = ~pal(db_target_val()),
+                fillOpacity = 1.0,
+                
+                # Add Borders
+                stroke = T,
+                color = "grey",
+                weight = 0.6,
+                
+                # Add tooltip
+                label = db_map_tooltip(),
+                labelOptions = labelOptions(
+                    style = list("font-weight" = "normal",
+                                 padding = "3px 8px"),
+                    textsize = "13px",
+                    direction = "auto"
+                )
+            )
+    })
+    
+    # Update map legend
+    observe({
+        pal <- db_map_cols()
         
-        # Create Actual map
-        leaflet(db_date_sel()) %>%
-        # Polygon data
-        addPolygons(
-            # Get color
-            fillColor = ~colorF(db_target_val()),
-            # Make tiles opaque
-            fillOpacity = 1.0,
-            # Add thin gray border
-            stroke = T, color = "grey", weight = 0.6,
-            # Add stylized tooltip
-            label = tooltip,
-            labelOptions = labelOptions(
-                style = list("font-weight" = "normal", padding = "3px 8px"),
-                textsize = "13px",
-                direction = "auto"
-            )) %>%
-        # And lastly add a legend
-        addLegend( pal=colorF, values=db_target_val(), opacity = 0.9,
-                   title = db_target_title(), position = "topleft" )
+        leafletProxy("db_map", data = db_date_sel()) %>%
+            clearControls() %>%
+            addLegend(position = "topleft", pal = pal, opacity = 0.9,
+                      title = db_target_title(), values = db_target_val())
     })
     
     ## Daily Rates Section
