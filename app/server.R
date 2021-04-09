@@ -417,7 +417,7 @@ shinyServer(function(input, output, session) {
                           bordercolor = "transparent"),
             yaxis = list(title = "Cases (Per 100k)", showgrid = FALSE,
                          fixedrange = TRUE),
-            xaxis = list(title = "", showgrid = FALSE, fixedRange = TRUE,
+            xaxis = list(title = "", showgrid = FALSE, fixedrange = TRUE,
                          # Add spike line
                          showspikes = TRUE,
                          spikethickness = 2,
