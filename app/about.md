@@ -20,7 +20,7 @@ show trends that you can't see from just raw data. This in turn makes it less
 work for the viewer and gives them a clearer picture of what is going on in each
 county.
 
-This project implementation is open-source, and is written in R. All of the 
+This project is open source and written in R. All of the 
 COVID-19 related data that is used in this project comes from the 
 [Virginia Department of Health](https://data.virginia.gov). The population and
 geographical data is from the 2019 census. The project is available for viewers
