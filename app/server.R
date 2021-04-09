@@ -228,7 +228,7 @@ shinyServer(function(input, output, session) {
     db_map_tooltip <- reactive({
         paste0(
             "<b>", db_date_sel()$locality, "</b></br>",
-            "Covid Cases: ", db_date_sel()$total_cases, "</br>",
+            "Total Cases: ", db_date_sel()$total_cases, "</br>",
             "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
             "Deaths: ", db_date_sel()$deaths, "</br>",
             "Population: ", db_date_sel()$pop, "</br></br>",
@@ -314,18 +314,15 @@ shinyServer(function(input, output, session) {
         # Tooltip for confirmed
         text_conf <- paste0(
             "Date: ", db_rates_data()$report_date, "\n",
-            "Cases: ", db_rates_data()$rate.c, "\n",
-            "Status: Confirmed\n"
+            "Confirmed Cases: ", db_rates_data()$rate.c, "\n"
         )
         # Tooltip for probable
         text_prob <- paste0(
             "Date: ", db_rates_data()$report_date, "\n",
-            "Cases: ", db_rates_data()$rate.p, "\n",
-            "Status: Probable\n"
+            "Probable Cases: ", db_rates_data()$rate.p, "\n"
         )
         # Tooltip for average line
         text_avg <- paste0(
-            "Report Date: ", db_rates_data()$report_date, "\n",
             "Total Cases: ", db_rates_data()$rate.t, "\n",
             "7-day Moving Average: ", floor(db_rates_data()$avg), "\n"
         )
@@ -343,20 +340,39 @@ shinyServer(function(input, output, session) {
             text = text_prob, color = I("red")
         ) %>% add_trace(
             # Average lines
-            y = ~avg, name = "7-Day Average",
+            y = ~avg, name = "Total (7-Day Average)",
             text = text_avg, line = list(
-                color = I("black")
+                color = "black"
             ),
             type = 'scatter', mode = 'lines'
         ) %>% layout (
             # Labels & Setup
-            yaxis = list(title = "Cases"),
-            xaxis = list(title = "Report Date"),
-            barmode = 'group'
+            title = "Daily Virginia COVID-19 Rates",
+            legend = list(x = 0, y = 1,
+                          bgcolor = "transparent",
+                          bordercolor = "transparent"),
+            yaxis = list(title = "Cases", showgrid = FALSE, fixedrange = TRUE),
+            xaxis = list(title = "", showgrid = FALSE, fixedrange = TRUE,
+                         # Add spike line
+                         showspikes = TRUE,
+                         spikethickness = 2,
+                         spikedash = 'dot',
+                         spikecolor = "darkgrey",
+                         spikemode = 'across'),
+            hoverlabel = list(bordercolor = "black"),
+            barmode = 'group',
+            hovermode = 'x unified',
+            hoverdistance = 1,
+            spikedistance = 1000
+        ) %>% config(
+            displayModeBar = FALSE,
+            displaylogo = FALSE,
+            showTips = FALSE
         )
     })
     
-    # County with the highest number of cases
+    ## County with highest cases
+    
     output$db_highest_cases <- renderPlotly({
         # Get county with highest current cases
         highest_co <- rates %>%
@@ -372,12 +388,12 @@ shinyServer(function(input, output, session) {
         text_county <- paste0(
             "County: ", highest_co$name, "\n",
             "Date: ", highest_co$report_date, "\n",
-            "Cases per 100k: ", floor(highest_co$cases), "\n"
+            "Cases (per 100k): ", floor(highest_co$cases), "\n"
         )
         text_va <- paste0(
             "VA Average\n",
             "Date: ", highest_co$report_date, "\n",
-            "Cases per 100k: ", floor(highest_co$va_cases), "\n"
+            "Cases (per 100k): ", floor(highest_co$va_cases), "\n"
         )
         
         # Generate plot
@@ -394,12 +410,32 @@ shinyServer(function(input, output, session) {
             text = text_va, color = I("black")
         ) %>% layout (
             # Labels & Setup
-            yaxis = list(title = "Cases (Population Adjusted)"),
-            xaxis = list(title = "Report Date")
+            title = paste0("Cases in ", highest_co$name, " vs. State Average",
+                           "\n(Population Adjusted)"),
+            legend = list(x = 0, y = 1,
+                          bgcolor = "transparent",
+                          bordercolor = "transparent"),
+            yaxis = list(title = "Cases (Per 100k)", showgrid = FALSE,
+                         fixedrange = TRUE),
+            xaxis = list(title = "", showgrid = FALSE, fixedRange = TRUE,
+                         # Add spike line
+                         showspikes = TRUE,
+                         spikethickness = 2,
+                         spikedash = 'dot',
+                         spikecolor = "darkgrey",
+                         spikemode = 'across'),
+            hovermode = 'x',
+            hoverdistance = 100,
+            spikedistance = 1000
+        ) %>% config(
+            displayModeBar = FALSE,
+            displaylogo = FALSE,
+            showTips = FALSE
         )
     })
     
-    # County with the highest daily rate
+    ## County with the highest daily rate
+    
     output$db_highest_rates <- renderPlotly({
         # Get county with highest daily rate
         highest_co <- rates %>%
@@ -415,13 +451,13 @@ shinyServer(function(input, output, session) {
         text_county <- paste0(
             "County: ", highest_co$name, "\n",
             "Date: ", highest_co$report_date, "\n",
-            "Daily Cases per 100k: ", floor(highest_co$rate), "\n",
+            "Daily Cases (per 100k): ", floor(highest_co$rate), "\n",
             "7-Day Average (per 100k): ", floor(highest_co$rate.avg), "\n"
         )
         text_va <- paste0(
             "VA Average\n",
             "Date: ", highest_co$report_date, "\n",
-            "Daily Cases per 100k: ", floor(highest_co$va_rate), "\n",
+            "Daily Cases (per 100k): ", floor(highest_co$va_rate), "\n",
             "7-Day Average (per 100k): ", floor(highest_co$va_rate.avg), "\n"
         )
         
@@ -431,17 +467,36 @@ shinyServer(function(input, output, session) {
             x = ~report_date, type = 'scatter', mode = 'lines',
             hoverinfo = 'text',
             # County Rate
-            y = ~rate.avg, name = paste0(highest_co$name, "\n (7-Day Average)"),
+            y = ~rate.avg, name = paste0(highest_co$name, " (7-Day Average)"),
             text = text_county, color = I("red")
         ) %>% add_trace(
             # VA Rate
-            y = ~va_rate.avg, name = "VA Average\n(7-Day Average)",
+            y = ~va_rate.avg, name = "VA Average (7-Day Average)",
             text = text_va, color = I("black")
         ) %>% layout (
             # Labels & Setup
-            yaxis = list(title = "Daily Cases (Population Adjusted)"),
-            xaxis = list(title = "Report Date"),
-            barmode = 'group'
+            title = paste0("Daily Rates in ", highest_co$name, 
+                           " vs. State Average\n(Population Adjusted)"),
+            legend = list(x = 0, y = 1,
+                          bgcolor = "transparent",
+                          bordercolor = "transparent"),
+            yaxis = list(title = "Daily Cases (Per 100k)", showgrid = FALSE,
+                         fixedrange = TRUE),
+            xaxis = list(title = "", showgrid = FALSE, fixedrange = TRUE,
+                         # Add spike line
+                         showspikes = TRUE,
+                         spikethickness = 2,
+                         spikedash = 'dot',
+                         spikecolor = "darkgrey",
+                         spikemode = 'across'),
+            barmode = 'group',
+            hovermode = 'x',
+            hoverdistance = 100,
+            spikedistance = 1000
+        ) %>% config(
+            displayModeBar = FALSE,
+            displaylogo = FALSE,
+            showTips = FALSE
         )
     })
     
