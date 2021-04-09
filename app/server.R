@@ -71,9 +71,6 @@ rm(pop.total)
 
 ## Custom data
 
-# Color bins for main choropleth
-#categories.total <- c(0, 1.5625, 3.125, 6.25, 12.5, 25, 50, 75, Inf) / 100
-#categories.rate  <- c(0, 25, 50, 75, Inf) / 100
 # Min and max dates in data
 spdf.min <- min(spdf$report_date)
 spdf.max <- max(spdf$report_date)
@@ -106,6 +103,23 @@ confd <- confd %>%
 stats.c = sum(spdf$total_cases[spdf$report_date == spdf.max])
 stats.h = sum(spdf$hospitalizations[spdf$report_date == spdf.max])
 stats.d = sum(spdf$deaths[spdf$report_date == spdf.max])
+stats.p = sum(spdf$pop[spdf$report_date == spdf.max])
+
+# Case rates for each county
+rates <- spdf@data %>%
+    select(report_date = report_date, name = locality,
+           id = fips, cases = total_cases.adj) %>%
+    group_by(id) %>%
+    arrange(id, report_date) %>%
+    mutate(rate = cases - lag(cases)) %>%
+    mutate(rate.avg = rollmean(rate, 7, fill = NA)) %>%
+    ungroup()
+
+rates.va <- confd %>%
+    transmute(va_cases    = cases.t * 100000 / stats.p,
+              va_rate     = rate.t  * 100000 / stats.p,
+              va_rate.avg = avg     * 100000 / stats.p,
+              report_date = report_date)
 
 ## SERVER FUNCTIONS ############################################################
 shinyServer(function(input, output, session) {
@@ -300,12 +314,101 @@ shinyServer(function(input, output, session) {
             # Average lines
             y = ~avg, name = "7-Day Average",
             text = text_avg, line = list(
-                color = 'black'
+                color = I("black")
             ),
             type = 'scatter', mode = 'lines'
         ) %>% layout (
             # Labels & Setup
             yaxis = list(title = "Cases"),
+            xaxis = list(title = "Report Date"),
+            barmode = 'group'
+        )
+    })
+    
+    # County with the highest number of cases
+    output$db_highest_cases <- renderPlotly({
+        # Get county with highest current cases
+        highest_co <- rates %>%
+            slice_max(report_date) %>%
+            slice_max(cases, with_ties = F)
+        
+        # Now get that whole county's data
+        highest_co <- subset(rates, id == highest_co$id)
+        # And add VA averages
+        highest_co <- merge(highest_co, rates.va)
+        
+        # Generate tooltips
+        text_county <- paste0(
+            "County: ", highest_co$name, "\n",
+            "Date: ", highest_co$report_date, "\n",
+            "Cases per 100k: ", floor(highest_co$cases), "\n"
+        )
+        text_va <- paste0(
+            "VA Average\n",
+            "Date: ", highest_co$report_date, "\n",
+            "Cases per 100k: ", floor(highest_co$va_cases), "\n"
+        )
+        
+        # Generate plot
+        plot_ly(
+            highest_co,
+            x = ~report_date, type = 'scatter', mode = 'lines',
+            hoverinfo = 'text',
+            # County cases
+            y = ~cases, name = highest_co$name,
+            text = text_county, color = I("red")
+        ) %>% add_trace(
+            # VA Cases
+            y = ~va_cases, name = "VA Average",
+            text = text_va, color = I("black")
+        ) %>% layout (
+            # Labels & Setup
+            yaxis = list(title = "Cases (Population Adjusted)"),
+            xaxis = list(title = "Report Date")
+        )
+    })
+    
+    # County with the highest daily rate
+    output$db_highest_rates <- renderPlotly({
+        # Get county with highest daily rate
+        highest_co <- rates %>%
+            slice_max(report_date) %>%
+            slice_max(rate, with_ties = F)
+        
+        # Now get that whole county's data
+        highest_co <- subset(rates, id == highest_co$id)
+        # And add VA averages
+        highest_co <- merge(highest_co, rates.va)
+        
+        # Generate tooltips
+        text_county <- paste0(
+            "County: ", highest_co$name, "\n",
+            "Date: ", highest_co$report_date, "\n",
+            "Daily Cases per 100k: ", floor(highest_co$rate), "\n",
+            "7-Day Average (per 100k): ", floor(highest_co$rate.avg), "\n"
+        )
+        text_va <- paste0(
+            "VA Average\n",
+            "Date: ", highest_co$report_date, "\n",
+            "Daily Cases per 100k: ", floor(highest_co$va_rate), "\n",
+            "7-Day Average (per 100k): ", floor(highest_co$va_rate.avg), "\n"
+        )
+        
+        # Generate plot
+        plot_ly(
+            highest_co,
+            x = ~report_date, type = 'scatter', mode = 'lines',
+            hoverinfo = 'text',
+            # County Rate
+            y = ~rate.avg, name = paste0(highest_co$name, "\n (7-Day Average)"),
+            text = text_county, color = I("red")
+        ) %>% add_trace(
+            # VA Rate
+            y = ~va_rate.avg, name = "VA Average\n(7-Day Average)",
+            text = text_va, color = I("black")
+        ) %>% layout (
+            # Labels & Setup
+            yaxis = list(title = "Daily Cases (Population Adjusted)"),
             xaxis = list(title = "Report Date"),
             barmode = 'group'
         )

@@ -15,17 +15,15 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
                                     "Hospitalizations" = "hosp",
                                     "Deaths" = "deaths")),
         checkboxInput("db_pop_adj", "Adjust for Population",
-                      value = FALSE),
+                      value = TRUE),
         leafletOutput("db_map"),
         headerPanel("Daily Rates"),
         htmlOutput("db_date_rng_ui"),
-        plotlyOutput("db_rates")
-        #headerPanel("County with Most Cases"),
-        #plotlyOutput("db_highest_cases")
-        #headerPanel("County with Highest Daily Rate"),
-        #plotlyOutput("db_highest_rate"),
-        #headerPanel("County with Largest Jump in Cases"),
-        #plotlyOutput("db_highest_jump")
+        plotlyOutput("db_rates"),
+        headerPanel("County with Most Cases per 100k"),
+        plotlyOutput("db_highest_cases"),
+        headerPanel("County with Highest Daily Rate per 100k"),
+        plotlyOutput("db_highest_rates")
     ),
     ## BY COUNTRY PAGE #########################################################
     tabPanel("By County",
