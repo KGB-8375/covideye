@@ -26,10 +26,10 @@ COVID-19 related data that is used in this project comes from the
 geographical data is from the 2019 census. The project is available for viewers
 on [GitHub](https://github.com/KGB-8375/rva-covidview).
 
-## Credits:
+# Credits
 
-Nathan Rowan (VCU)
+Nathan Rowan (VCU, Computer Engineering)
 
-Yaqub Mukhtar (VCU)
+Yaqub Mukhtar (VCU, Electrical Engineering)
 
-Duncan Fernandez (Reynolds)
+Duncan Fernandez (Reynolds, Computer Engineering)

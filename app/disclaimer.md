@@ -1,4 +1,4 @@
-## DISCLAIMER:
+# DISCLAIMER
 
 All COVID-19 related data has been reported to the Virginia Department of
 Health. All population data is from 2019 census estimates. All geographical

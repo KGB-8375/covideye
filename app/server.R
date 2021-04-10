@@ -30,14 +30,14 @@ cases$hospitalizations  <- as.numeric(cases$hospitalizations)
 
 confd$report_date       <- as.Date(confd$report_date)
 confd$number_of_cases   <- as.numeric(confd$number_of_cases)
+confd$number_of_deaths  <- as.numeric(confd$number_of_deaths)
+confd$number_of_hospitalizations <-
+    as.numeric(confd$number_of_hospitalizations)
 
 pop$population_estimate <- as.numeric(pop$population_estimate)
 
 # Delete unneeded cols
 cases <- cases %>% select(!c(vdh_health_district))
-
-confd <- confd %>% select(!c(number_of_deaths, 
-                             number_of_hospitalizations))
 
 pop <- subset(pop, year == max(year))
 pop <- pop %>% select(!c(health_district,
@@ -58,7 +58,11 @@ confd.p <- subset(confd, case_status == "Probable")  %>% arrange(report_date)
 # recombine as columns
 confd <- data.frame(report_date = confd.c$report_date,
                     cases.c = confd.c$number_of_cases,
-                    cases.p = confd.p$number_of_cases)
+                    cases.p = confd.p$number_of_cases,
+                    deaths.c = confd.c$number_of_deaths,
+                    deaths.p = confd.p$number_of_deaths,
+                    hosp.c = confd.c$number_of_hospitalizations,
+                    hosp.p = confd.p$number_of_hospitalizations)
 # remove temp values
 rm(confd.c, confd.p)
 
@@ -91,7 +95,9 @@ confd <- confd %>%
     # Sort by report date
     arrange(report_date) %>%
     # Total cases
-    mutate(cases.t = cases.c + cases.p) %>%
+    mutate(cases.t = cases.c + cases.p,
+           deaths.t = deaths.c + deaths.p,
+           hosp.t = hosp.c + hosp.p) %>%
     # Rates of confirmed, probable, total
     mutate(rate.c = cases.c - lag(cases.c),
            rate.p = cases.p - lag(cases.p),
@@ -99,11 +105,9 @@ confd <- confd %>%
     # 7-day moving average of total
     mutate(avg = rollmean(rate.t, 7, fill = NA))
 
-# Current totals of cases, etc;
-stats.c = sum(spdf$total_cases[spdf$report_date == spdf.max])
-stats.h = sum(spdf$hospitalizations[spdf$report_date == spdf.max])
-stats.d = sum(spdf$deaths[spdf$report_date == spdf.max])
-stats.p = sum(spdf$pop[spdf$report_date == spdf.max])
+# Statistics numbers
+stats <- subset(confd, report_date == confd.max)
+stats.p <- sum(pop$est)
 
 # Case rates for each county
 rates <- spdf@data %>%
@@ -128,10 +132,45 @@ shinyServer(function(input, output, session) {
     
     # Quick Statistics
     output$db_stats <- renderUI({
-        paste0("Total Cases: ", stats.c, "</br>",
-               "Total Hospitalizations: ", stats.h, "</br>",
-               "Total Deaths: ", stats.d, "</br>") %>%
-            lapply(htmltools::HTML)
+        wellPanel(
+            fluidRow(
+                column(4, h2("Total Cases: ", 
+                             format(stats$cases.t, 
+                                    big.mark = ',', 
+                                    scientific = F), 
+                             align = 'center'),
+                       
+                       h3("(", format(stats$cases.c,
+                                      big.mark = ',',
+                                      scientific = F)
+                          , " Confirmed )", 
+                          align = 'center')),
+                
+                column(4, h2("Total Hospitalizations: ", 
+                             format(stats$hosp.t,
+                                    big.mark = ',',
+                                    scientific = F),
+                             align = 'center'),
+                       
+                       h3("(", format(stats$hosp.c,
+                                      big.mark = ',',
+                                      scientific = F),
+                          " Confirmed )",
+                          align = 'center')),
+                
+                column(4, h2("Total Deaths: ", 
+                             format(stats$deaths.t,
+                                    big.mark = ',',
+                                    scientific = F),
+                             align = 'center'),
+                       
+                       h3("(", format(stats$deaths.c,
+                                      big.mark = ',',
+                                      scientific = F), 
+                          " Confirmed )",
+                          align = 'center'))
+            )
+        )
     })
     
     ## Map Section
@@ -141,7 +180,8 @@ shinyServer(function(input, output, session) {
         dateInput("db_date", "Select Date:",
                   min = spdf.min, 
                   max = spdf.max,
-                  value = spdf.max)
+                  value = spdf.max,
+                  format = "mm/dd/yy")
     })
     
     # Date Selection
@@ -227,7 +267,8 @@ shinyServer(function(input, output, session) {
     # Tooltips for map
     db_map_tooltip <- reactive({
         paste0(
-            "<b>", db_date_sel()$locality, "</b></br>",
+            "<b>", db_date_sel()$locality, "</b> (",
+            format(db_date_sel()$report_date, "%D"),")</br>",
             "Total Cases: ", db_date_sel()$total_cases, "</br>",
             "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
             "Deaths: ", db_date_sel()$deaths, "</br>",
@@ -283,7 +324,7 @@ shinyServer(function(input, output, session) {
         
         leafletProxy("db_map", data = db_date_sel()) %>%
             clearControls() %>%
-            addLegend(position = "topleft", pal = pal, opacity = 0.9,
+            addLegend(position = "bottomleft", pal = pal, opacity = 0.9,
                       title = db_target_title(), values = db_target_val())
     })
     
@@ -295,7 +336,8 @@ shinyServer(function(input, output, session) {
                        start = confd.min,
                        end   = confd.max,
                        min   = confd.min,
-                       max   = confd.max)
+                       max   = confd.max,
+                       format = "mm/dd/yy")
     })
     
     # Selected rates (Confirmed Vs Unconfirmed)
@@ -313,12 +355,12 @@ shinyServer(function(input, output, session) {
     output$db_rates <- renderPlotly({
         # Tooltip for confirmed
         text_conf <- paste0(
-            "Date: ", db_rates_data()$report_date, "\n",
+            "Date: ", format(db_rates_data()$report_date, "%D"), "\n",
             "Confirmed Cases: ", db_rates_data()$rate.c, "\n"
         )
         # Tooltip for probable
         text_prob <- paste0(
-            "Date: ", db_rates_data()$report_date, "\n",
+            "Date: ", format(db_rates_data()$report_date, "%D"), "\n",
             "Probable Cases: ", db_rates_data()$rate.p, "\n"
         )
         # Tooltip for average line
@@ -387,13 +429,18 @@ shinyServer(function(input, output, session) {
         # Generate tooltips
         text_county <- paste0(
             "County: ", highest_co$name, "\n",
-            "Date: ", highest_co$report_date, "\n",
+            "Date: ", format(highest_co$report_date, "%D"), "\n",
             "Cases (per 100k): ", floor(highest_co$cases), "\n"
         )
         text_va <- paste0(
             "VA Average\n",
-            "Date: ", highest_co$report_date, "\n",
+            "Date: ", format(highest_co$report_date, "%D"), "\n",
             "Cases (per 100k): ", floor(highest_co$va_cases), "\n"
+        )
+        
+        text_title <- paste0(
+            "Cases in ", highest_co$name[1], " vs. State Average\n",
+            "(Population Adjusted)"
         )
         
         # Generate plot
@@ -410,8 +457,7 @@ shinyServer(function(input, output, session) {
             text = text_va, color = I("black")
         ) %>% layout (
             # Labels & Setup
-            title = paste0("Cases in ", highest_co$name, " vs. State Average",
-                           "\n(Population Adjusted)"),
+            title = text_title,
             legend = list(x = 0, y = 1,
                           bgcolor = "transparent",
                           bordercolor = "transparent"),
@@ -450,15 +496,20 @@ shinyServer(function(input, output, session) {
         # Generate tooltips
         text_county <- paste0(
             "County: ", highest_co$name, "\n",
-            "Date: ", highest_co$report_date, "\n",
+            "Date: ", format(highest_co$report_date, "%D"), "\n",
             "Daily Cases (per 100k): ", floor(highest_co$rate), "\n",
             "7-Day Average (per 100k): ", floor(highest_co$rate.avg), "\n"
         )
         text_va <- paste0(
             "VA Average\n",
-            "Date: ", highest_co$report_date, "\n",
+            "Date: ", format(highest_co$report_date, "%D"), "\n",
             "Daily Cases (per 100k): ", floor(highest_co$va_rate), "\n",
             "7-Day Average (per 100k): ", floor(highest_co$va_rate.avg), "\n"
+        )
+        
+        text_title <- paste0(
+            "Daily Rates in ", highest_co$name[1], " vs. State Average\n",
+            "(Population Adjusted)"
         )
         
         # Generate plot
@@ -475,8 +526,7 @@ shinyServer(function(input, output, session) {
             text = text_va, color = I("black")
         ) %>% layout (
             # Labels & Setup
-            title = paste0("Daily Rates in ", highest_co$name, 
-                           " vs. State Average\n(Population Adjusted)"),
+            title = text_title,
             legend = list(x = 0, y = 1,
                           bgcolor = "transparent",
                           bordercolor = "transparent"),
