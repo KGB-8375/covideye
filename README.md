@@ -20,9 +20,17 @@ Our team *Drumroll Please* is made up of three undergrad students in the Henrico
 
 ## Our solution path
 
-Our project is still very early in development, however we plan on making an interactive web app using the R programming language's
-`shiny` package, incorperating interactive elements such as choropleths
-to visualize an up-to-date data feed from the [Virginia Department of Health](https://www.vdh.virginia.gov/coronavirus/).
+We chose to create an interactive website with a live feed of the data available from the Virginia Department of Health. To accomplish
+this we're using a `Shiny` application written in `R`. This allows us to quickly build a website with a simple and effective interface
+using many interactive maps (using `leaflet`), graphs (using `plotly`), and more all using one language (`R`). When a client connects 
+to the site, all of these graphs are generated dynamically from an active R session before being sent to the webserver. This allows
+for a huge amount of flexibility, offering graphs that are potentially unavailable anywhere else. The downside is this uses a 
+substaintial amount of server processing power, however we are doing our best to keep the app running optimized and responsive for end
+users.
 
 A live demo of our app can be viewed
 [here](https://rvacovidview.shinyapps.io/dashboard/)!
+
+## Copying
+
+We chose to make this project open-sourced, licensed under the GNU General Public License version 3. For more information, see LICENSE.
