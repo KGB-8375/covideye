@@ -11,9 +11,8 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
         tags$h1("The Commonwealth of Virginia"),
         htmlOutput("db_stats"),
         fluidRow(
-        column(12,
-            leafletOutput("db_map"),
-            absolutePanel(top = 10, right = 20,
+            column(9, leafletOutput("db_map")),
+            column(3, inputPanel(
                 htmlOutput("db_date_ui"),
                 radioButtons("db_mode", "Show", selected = "cases",
                              choices = list("Population" = "pop",
@@ -22,13 +21,14 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
                                             "Deaths" = "deaths")),
                 checkboxInput("db_pop_adj", "Adjust for Population",
                               value = TRUE))
-        )),
+            )
+        ),
         tags$h2("Daily Rates"),
         htmlOutput("db_date_rng_ui"),
         plotlyOutput("db_rates"),
-        tags$h2("County with Most Cases"),
+        tags$h2("County with Most Cases (Population Adjusted)"),
         plotlyOutput("db_highest_cases"),
-        tags$h2("County with Highest Daily Rate"),
+        tags$h2("County with Highest Daily Rate (Population Adjusted)"),
         plotlyOutput("db_highest_rates")
     ),
     ## BY COUNTRY PAGE #########################################################

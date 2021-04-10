@@ -313,7 +313,7 @@ shinyServer(function(input, output, session) {
                     style = list("font-weight" = "normal",
                                  padding = "3px 8px"),
                     textsize = "13px",
-                    direction = "auto"
+                    direction = "right"
                 )
             )
     })
@@ -439,8 +439,7 @@ shinyServer(function(input, output, session) {
         )
         
         text_title <- paste0(
-            "Cases in ", highest_co$name[1], " vs. State Average\n",
-            "(Population Adjusted)"
+            "Cases in ", highest_co$name[1], " vs. State Average"
         )
         
         # Generate plot
@@ -508,8 +507,7 @@ shinyServer(function(input, output, session) {
         )
         
         text_title <- paste0(
-            "Daily Rates in ", highest_co$name[1], " vs. State Average\n",
-            "(Population Adjusted)"
+            "Daily Rates in ", highest_co$name[1], " vs. State Average"
         )
         
         # Generate plot
