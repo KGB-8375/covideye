@@ -15,6 +15,9 @@ library(BAMMtools) # Jenks breaks
 cases <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
 confd <- read.socrata("https://data.virginia.gov/resource/uqs3-x7zh.json")
 pop   <- read.socrata("https://data.virginia.gov/resource/5s4f-hthh.json")
+age <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
+race <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
+sex <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
 spdf  <- readOGR(
     dsn = "./DATA/shapefile",
     layer = "cb_2019_us_county_500k"
@@ -35,6 +38,28 @@ confd$number_of_hospitalizations <-
     as.numeric(confd$number_of_hospitalizations)
 
 pop$population_estimate <- as.numeric(pop$population_estimate)
+
+age$report_date <- as.Date(age$report_date)
+age$health_district <- as.character(age$health_district)
+age$age_group <- as.numeric(age$age_group)
+age$number_of_cases <- as.numeric(age$number_of_cases)
+age$number_of_hospitalizations <- 
+    as.numeric(age$number_of_hospitalizations)
+age$number_of_deaths <- as.numeric(age$number_of_deaths)
+
+race$report_date <- as.Date(race$report_date)
+race$number_of_cases <- as.numeric(race$number_of_cases)
+race$number_of_hospitalizations <- 
+    as.numeric(race$number_of_hospitalizations)
+race$number_of_deaths <- as.numeric(race$number_of_deaths)
+
+sex$report_date <- as.Date(sex$report_date)
+sex$health_district <- as.character(sex$health_district)
+sex$sex <- as.character(sex$sex)
+sex$number_of_cases <- as.numeric(sex$number_of_cases)
+sex$number_of_hospitalizations <- 
+    as.numeric(sex$number_of_hospitalizations)
+sex$number_of_deaths <- as.numeric(sex$number_of_deaths)
 
 # Delete unneeded cols
 cases <- cases %>% select(!c(vdh_health_district))
@@ -82,6 +107,15 @@ spdf.max <- max(spdf$report_date)
 confd.min <- min(confd$report_date)
 confd.max <- max(confd$report_date)
 
+age_max <- max(age$report_date)
+age_min <- min(age$report_date)
+
+race_max <- max(race$report_date)
+race_min <- min(race$report_date)
+
+sex_max <- max(sex$report_date)
+sex_min <- min(sex$report_date)
+
 ## Generated Data
 
 # Get the covid cases based on population density
@@ -124,6 +158,27 @@ rates.va <- confd %>%
               va_rate     = rate.t  * 100000 / stats.p,
               va_rate.avg = avg     * 100000 / stats.p,
               report_date = report_date)
+
+# Data for each race
+race <- race %>% 
+    group_by(report_date, race_and_ethnicity) %>%
+    summarise(cases = sum(number_of_cases),
+              hosp = sum(number_of_hospitalizations),
+              deaths = sum(number_of_deaths))
+
+# Race Population
+
+pop.race <- pop %>%
+    group_by(race_and_ethnicity) %>%
+    summarise(est = sum(est))
+
+# Find adjusted race data
+
+race.adj <- merge(race, pop.race, all.x=F, all.y=T)
+race.adj <- race.adj %>%
+    mutate(cases.adj = cases*100000/est,
+           hosp.adj = hosp*100000/est,
+           deaths.adj = deaths*100000/est)
 
 ## SERVER FUNCTIONS ############################################################
 shinyServer(function(input, output, session) {
@@ -548,6 +603,110 @@ shinyServer(function(input, output, session) {
         )
     })
     
-    ## BY COUNTRY PAGE #########################################################
+    ## BY COUNTY PAGE #########################################################
     ## DEMOGRAPHICS PAGE #######################################################
+    
+    ## Options
+    
+    # Date Selector
+    
+    output$demo_date_ui <- renderUI({
+        dateInput("demo_date", "Select Date:",
+                  min = sex_min, 
+                  max = sex_max,
+                  value = sex_max,
+                  format = "mm/dd/yy")
+    })
+    
+    demo_target <- reactive({
+        if(input$demo_pop_adj) {
+            race.adj
+        }
+        else {
+            race
+        }
+    })
+    
+    demo_date_sel <- reactive({
+        # Prevent errors
+        if(length(input$demo_date) == 0) {
+            subset(demo_target(), report_date == race_max)
+        }
+        else {
+            subset(demo_target(), report_date == input$demo_date)
+        }
+        
+    })
+    
+    # Mode chosen by user
+    
+    demo_mode_sel <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = demo_date_sel()$cases.adj,
+                   hosp = demo_date_sel()$hosp.adj,
+                   deaths = demo_date_sel()$deaths.adj)
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = demo_date_sel()$cases,
+                   hosp = demo_date_sel()$hosp,
+                   deaths = demo_date_sel()$deaths)
+        }
+
+    })
+    
+    # Plot Customization
+    
+    demo_race_title <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = "Cases by Minority\n(Population Adjusted)",
+                   hosp = paste0("Hosipitalizations by Minority\n",
+                                 "(Population Adjusted)"),
+                   deaths = "Deaths by Minority\n(Population Adjusted)")
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = "Cases by Minority\n(Total)",
+                   hosp = paste0("Hosipitalizations by Minority\n",
+                                 "(Total)"),
+                   deaths = "Deaths by Minority\n(Total)")
+        }
+    })
+    
+    ## Plots
+    
+    # Age Plot
+    
+    #plotly(
+        #age,
+        # = ~age$age_group,
+        #y = ~ ,
+        #type = "histogram",
+        #title = "Age groups affected by COVID-19"
+    #)
+    
+    # Race Plot
+    
+    output$demo_race <- renderPlotly({
+        plot_ly(
+            race,
+            labels = ~demo_date_sel()$race_and_ethnicity,
+            values = ~demo_mode_sel(),
+            type = "pie",
+            title = ~demo_race_title()
+        )
+    })
+    
+    
+    # Sex Plot
+    
+    #plotly(
+        #sex,
+        #x = ~sex$sex,
+        #y = ~ ,
+        #type = "histogram",
+        #title = "Sexes affected by COVID-19"
+    #)
 })
