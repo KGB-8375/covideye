@@ -40,8 +40,9 @@ confd$number_of_hospitalizations <-
 pop$population_estimate <- as.numeric(pop$population_estimate)
 
 age$report_date <- as.Date(age$report_date)
+age <- subset(age, report_date >= as.Date("2020-04-21"))
 age$health_district <- as.character(age$health_district)
-age$age_group <- as.numeric(age$age_group)
+age$age_group <- age$age_group
 age$number_of_cases <- as.numeric(age$number_of_cases)
 age$number_of_hospitalizations <- 
     as.numeric(age$number_of_hospitalizations)
@@ -54,6 +55,7 @@ race$number_of_hospitalizations <-
 race$number_of_deaths <- as.numeric(race$number_of_deaths)
 
 sex$report_date <- as.Date(sex$report_date)
+sex <- subset(sex, report_date >= as.Date("2020-04-13"))
 sex$health_district <- as.character(sex$health_district)
 sex$sex <- as.character(sex$sex)
 sex$number_of_cases <- as.numeric(sex$number_of_cases)
@@ -108,13 +110,16 @@ confd.min <- min(confd$report_date)
 confd.max <- max(confd$report_date)
 
 age_max <- max(age$report_date)
-age_min <- min(age$report_date)
+age_min <- "2020-04-21"
 
 race_max <- max(race$report_date)
 race_min <- min(race$report_date)
 
 sex_max <- max(sex$report_date)
-sex_min <- min(sex$report_date)
+sex_min <- "2020-04-13"
+
+demo_max <- min(sex_max, age_max, race_max)
+demo_min <- max(sex_min, age_min, race_min)
 
 ## Generated Data
 
@@ -159,7 +164,30 @@ rates.va <- confd %>%
               va_rate.avg = avg     * 100000 / stats.p,
               report_date = report_date)
 
-# Data for each race
+## Data for Age Category
+
+# Grouping Age Data
+age <- age %>%
+    group_by(report_date, age_group) %>%
+    summarise(cases = sum(number_of_cases),
+              hosp = sum(number_of_hospitalizations),
+              deaths = sum(number_of_deaths))
+
+# Age Population
+pop.age <- pop %>%
+    group_by(age_group) %>%
+    summarise(est = sum(est))
+
+# Find adjusted age data
+age.adj <- merge(age, pop.age, all.x=F, all.y=T)
+age.adj <- age.adj %>%
+    mutate(cases.adj = cases*100000/est,
+           hosp.adj = hosp*100000/est,
+           deaths.adj = deaths*100000/est)
+
+## Data for Race Category
+
+# Grouping Race Data
 race <- race %>% 
     group_by(report_date, race_and_ethnicity) %>%
     summarise(cases = sum(number_of_cases),
@@ -167,15 +195,34 @@ race <- race %>%
               deaths = sum(number_of_deaths))
 
 # Race Population
-
 pop.race <- pop %>%
     group_by(race_and_ethnicity) %>%
     summarise(est = sum(est))
 
 # Find adjusted race data
-
 race.adj <- merge(race, pop.race, all.x=F, all.y=T)
 race.adj <- race.adj %>%
+    mutate(cases.adj = cases*100000/est,
+           hosp.adj = hosp*100000/est,
+           deaths.adj = deaths*100000/est)
+
+## Data for Sex Category
+
+# Grouping Sex Data
+sex <- sex %>%
+    group_by(report_date, sex) %>%
+    summarise(cases = sum(number_of_cases),
+              hosp = sum(number_of_hospitalizations),
+              deaths = sum(number_of_deaths))
+
+# Sex Population
+pop.sex <- sex %>%
+    group_by(sex) %>%
+    summarise(est = sum(est))
+
+# Find adjusted sex data
+sex.adj <- merge(sex, pop.sex, all.x=F, all.y=T)
+sex.adj <- sex.adj %>%
     mutate(cases.adj = cases*100000/est,
            hosp.adj = hosp*100000/est,
            deaths.adj = deaths*100000/est)
@@ -658,6 +705,23 @@ shinyServer(function(input, output, session) {
     
     # Plot Customization
     
+    demo_age_title <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = "Cases by Age\n(Population Adjusted)",
+                   hosp = paste0("Hosipitalizations by Age\n",
+                                 "(Population Adjusted)"),
+                   deaths = "Deaths by Age\n(Population Adjusted)")
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = "Cases by Age\n(Total)",
+                   hosp = paste0("Hosipitalizations by Age\n",
+                                 "(Total)"),
+                   deaths = "Deaths by Age\n(Total)")
+        }
+    })
+    
     demo_race_title <- reactive({
         if(input$demo_pop_adj) {
             switch(input$demo_mode,
@@ -672,20 +736,22 @@ shinyServer(function(input, output, session) {
                    hosp = paste0("Hosipitalizations by Minority\n",
                                  "(Total)"),
                    deaths = "Deaths by Minority\n(Total)")
+            
         }
     })
     
+
     ## Plots
     
     # Age Plot
     
-    #plotly(
-        #age,
-        # = ~age$age_group,
-        #y = ~ ,
-        #type = "histogram",
-        #title = "Age groups affected by COVID-19"
-    #)
+    plotly(
+        age,
+        x = ~age_group,
+        y = ~demo_mode_sel(),
+        type = "histogram",
+        title = ~demo_age_title
+    )
     
     # Race Plot
     
