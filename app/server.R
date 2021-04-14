@@ -224,7 +224,7 @@ sex.adj <- sex.adj %>%
            deaths.adj = deaths*100000/est)
 
 ## SERVER FUNCTIONS ############################################################
-shinyServer(function(input, output, session) {
+shinyServer(function(input, output, session) ({
     
     ## DASHBOARD PAGE ##########################################################
     
@@ -790,6 +790,88 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    demo_age_y_label <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = "Cases per 100k",
+                   hosp = "Hospitalizations per 100k",
+                   deaths = "Deaths per 100k")
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = "Cases",
+                   hosp = "Hospitalizations",
+                   deaths = "Deaths")
+        }
+    })
+    
+    demo_age_color <- reactive({
+        switch(input$demo_mode,
+            cases = list(color = 'rgb(2, 180, 212)',
+                         line = list(color = 'rgb(3, 126, 148)',
+                                     width = 1.5)),
+            hosp = list(color = 'rgb(252, 157, 3)',
+                        line = list(color = 'rgb(181, 112, 0)',
+                                    width = 1.5)),
+            deaths = list(color = 'rgb(143, 143, 143)',
+                          line = list(color = 'rgb(87, 87, 87)',
+                                      width = 1.5))
+            )
+    })
+    
+    demo_age_tooltips <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Cases per 100k: ", floor(
+                           demo_age_date_sel()$cases.adj), "\n"
+                   ),
+                   hosp = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Hospitalizations per 100k: ", floor(
+                           demo_age_date_sel()$hosp.adj), "\n"
+                   ),
+                   deaths = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Deaths per 100k: ", floor(
+                           demo_age_date_sel()$deaths.adj), "\n"
+                   )
+            )
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Total Cases: ", floor(
+                           demo_age_date_sel()$cases), "\n"
+                   ),
+                   hosp = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Total Hospitalizations: ", floor(
+                           demo_age_date_sel()$hosp), "\n"
+                   ),
+                   deaths = paste0(
+                       "Years of Age: ", demo_age_date_sel()$age_group, "\n",
+                       "Date: ", format(
+                           demo_age_date_sel()$report_date, "%D"), "\n",
+                       "Total Deaths: ", floor(
+                           demo_age_date_sel()$deaths), "\n"
+                   )
+            )
+        }
+    })
+    
     demo_race_title <- reactive({
         if(input$demo_pop_adj) {
             switch(input$demo_mode,
@@ -825,42 +907,85 @@ shinyServer(function(input, output, session) {
             
         }
     })
+    
+    demo_sex_y_label <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = "Cases per 100k",
+                   hosp = "Hospitalizations per 100k",
+                   deaths = "Deaths per 100k")
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = "Cases",
+                   hosp = "Hospitalizations",
+                   deaths = "Deaths")
+            
+        }
+    })
 
     ## Plots
     
     # Age Plot
-    
     output$demo_age <- renderPlotly({
         plot_ly(
             x = ~demo_age_date_sel()$age_group,
             y = ~demo_age_mode_sel(),
-            type = "bar"
-            #title = ~demo_age_title()
+            type = "bar",
+            marker = ~demo_age_color(),
+            hoverinfo = 'text',
+            text = ~demo_age_tooltips()
+        ) %>% layout(
+            title = ~demo_age_title(),
+            xaxis = list(title = "Age Groups"),
+            yaxis = list(title = ~demo_age_y_label())
         )
-
     })
     
     # Race Plot
-    
     output$demo_race <- renderPlotly({
         plot_ly(
             race,
             labels = ~demo_race_date_sel()$race_and_ethnicity,
             values = ~demo_race_mode_sel(),
             type = "pie",
-            title = ~demo_race_title()
+            title = ~demo_race_title(),
+            marker = list(
+                colors = c(
+                    'rgb(102,194,165)',
+                    'rgb(252,141,98)',
+                    'rgb(141,160,203)',
+                    'rgb(231,138,195)',
+                    'rgb(166,216,84)',
+                    'rgb(255,217,47)',
+                    'rgb(179,179,179)',
+                    'rgb(229,196,148)'
+                ),
+                line = list(color = '0, 0, 0', width = 1)
+            ),
+            sort = F
         )
     })
-    
     
     # Sex Plot
-    
     output$demo_sex <- renderPlotly({
         plot_ly(
-            x = ~demo_sex_date_sel()$sex,
-            y = ~demo_sex_mode_sel(),
-            type = "bar"
-            #title = ~demo_sex_title()
-        )
+            y = ~demo_sex_date_sel()$sex,
+            x = ~demo_sex_mode_sel(),
+            type = "bar",
+            orientation = 'h',
+            marker = list(
+                color = c(
+                    'rgb(237, 119, 215)', 
+                    'rgb(6, 98, 204)',  
+                    'rgb(107, 107, 107)'
+                    )
+                )
+        ) %>%layout(
+            title = ~demo_sex_title(),
+            yaxis = list(title = "Gender"),
+            xaxis = list(title = ~demo_sex_y_label())
+            )
     })
 })
+)
