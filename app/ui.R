@@ -12,7 +12,7 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
         htmlOutput("db_stats"),
         fluidRow(
             column(9, leafletOutput("db_map")),
-            column(3, inputPanel(
+            column(3, wellPanel(
                 htmlOutput("db_date_ui"),
                 radioButtons("db_mode", "Show", selected = "cases",
                              choices = list("Population" = "pop",
@@ -37,19 +37,24 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
     ## DEMOGRAPHICS PAGE #######################################################
     tabPanel("Demographics",
         tags$h1("Who COVID-19 is affecting the most"),
-        htmlOutput("demo_date_ui"),
-        radioButtons("demo_mode","Show", selected = "cases",
-            choices = list("Cases" = "cases",
-                           "Hospitilizations" = "hosp",
-                           "Deaths" = "deaths")),
-        checkboxInput("demo_pop_adj", "Adjust for Population",
-                      value = TRUE),
-        tags$h2("Age Groups"),
-        plotlyOutput("demo_age"),
-        tags$h2("Race"),
-        plotlyOutput("demo_race"),
-        tags$h2("Sex"),
-        plotlyOutput("demo_sex")
+        fluidRow(
+            column(6, tags$h2("Age Groups", align = 'center'),
+                      plotlyOutput("demo_age")),
+            column(6, wellPanel(htmlOutput("demo_date_ui"),
+                          radioButtons("demo_mode","Show", selected = "cases",
+                              choices = list("Cases" = "cases",
+                                             "Hospitilizations" = "hosp",
+                                             "Deaths" = "deaths")),
+                          checkboxInput("demo_pop_adj", "Adjust for Population",
+                                         value = TRUE)),)
+        ),
+        fluidRow(
+            column(6, align = 'center', tags$h2("Sex"),
+                   plotlyOutput("demo_sex", width = '50%')),
+            column(6, tags$h2("Race", align = 'center'),
+                   plotlyOutput("demo_race"))
+        )
+
     ),
     ## ABOUT PAGE ##############################################################
     tabPanel("About",
