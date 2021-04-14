@@ -41,8 +41,6 @@ pop$population_estimate <- as.numeric(pop$population_estimate)
 
 age$report_date <- as.Date(age$report_date)
 age <- subset(age, report_date >= as.Date("2020-04-21"))
-age$health_district <- as.character(age$health_district)
-age$age_group <- age$age_group
 age$number_of_cases <- as.numeric(age$number_of_cases)
 age$number_of_hospitalizations <- 
     as.numeric(age$number_of_hospitalizations)
@@ -56,8 +54,6 @@ race$number_of_deaths <- as.numeric(race$number_of_deaths)
 
 sex$report_date <- as.Date(sex$report_date)
 sex <- subset(sex, report_date >= as.Date("2020-04-13"))
-sex$health_district <- as.character(sex$health_district)
-sex$sex <- as.character(sex$sex)
 sex$number_of_cases <- as.numeric(sex$number_of_cases)
 sex$number_of_hospitalizations <- 
     as.numeric(sex$number_of_hospitalizations)
@@ -216,7 +212,7 @@ sex <- sex %>%
               deaths = sum(number_of_deaths))
 
 # Sex Population
-pop.sex <- sex %>%
+pop.sex <- pop %>%
     group_by(sex) %>%
     summarise(est = sum(est))
 
@@ -656,7 +652,6 @@ shinyServer(function(input, output, session) {
     ## Options
     
     # Date Selector
-    
     output$demo_date_ui <- renderUI({
         dateInput("demo_date", "Select Date:",
                   min = sex_min, 
@@ -665,7 +660,17 @@ shinyServer(function(input, output, session) {
                   format = "mm/dd/yy")
     })
     
-    demo_target <- reactive({
+    # Data Switcher for Population Adjustment
+    demo_age_target <- reactive({
+        if(input$demo_pop_adj) {
+            age.adj
+        }
+        else {
+            age
+        }
+    })
+    
+    demo_race_target <- reactive({
         if(input$demo_pop_adj) {
             race.adj
         }
@@ -674,33 +679,96 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    demo_date_sel <- reactive({
-        # Prevent errors
-        if(length(input$demo_date) == 0) {
-            subset(demo_target(), report_date == race_max)
+    demo_sex_target <- reactive({
+        if(input$demo_pop_adj) {
+            sex.adj
         }
         else {
-            subset(demo_target(), report_date == input$demo_date)
+            sex
+        }
+    })
+    
+    # Date Variables for Plots
+    demo_age_date_sel <- reactive({
+        # Prevent errors
+        if(length(input$demo_date) == 0) {
+            subset(demo_age_target(), report_date == age_max)
+        }
+        else {
+            subset(demo_age_target(), report_date == input$demo_date)
+        }
+        
+    })
+    
+    demo_race_date_sel <- reactive({
+        # Prevent errors
+        if(length(input$demo_date) == 0) {
+            subset(demo_race_target(), report_date == race_max)
+        }
+        else {
+            subset(demo_race_target(), report_date == input$demo_date)
+        }
+        
+    })
+    
+    demo_sex_date_sel <- reactive({
+        # Prevent errors
+        if(length(input$demo_date) == 0) {
+            subset(demo_sex_target(), report_date == sex_max)
+        }
+        else {
+            subset(demo_sex_target(), report_date == input$demo_date)
         }
         
     })
     
     # Mode chosen by user
-    
-    demo_mode_sel <- reactive({
+    demo_age_mode_sel <- reactive({
         if(input$demo_pop_adj) {
             switch(input$demo_mode,
-                   cases = demo_date_sel()$cases.adj,
-                   hosp = demo_date_sel()$hosp.adj,
-                   deaths = demo_date_sel()$deaths.adj)
+                   cases = demo_age_date_sel()$cases.adj,
+                   hosp = demo_age_date_sel()$hosp.adj,
+                   deaths = demo_age_date_sel()$deaths.adj)
         }
         else {
             switch(input$demo_mode,
-                   cases = demo_date_sel()$cases,
-                   hosp = demo_date_sel()$hosp,
-                   deaths = demo_date_sel()$deaths)
+                   cases = demo_age_date_sel()$cases,
+                   hosp = demo_age_date_sel()$hosp,
+                   deaths = demo_age_date_sel()$deaths)
+        }
+        
+    })
+    
+    demo_race_mode_sel <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = demo_race_date_sel()$cases.adj,
+                   hosp = demo_race_date_sel()$hosp.adj,
+                   deaths = demo_race_date_sel()$deaths.adj)
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = demo_race_date_sel()$cases,
+                   hosp = demo_race_date_sel()$hosp,
+                   deaths = demo_race_date_sel()$deaths)
         }
 
+    })
+    
+    demo_sex_mode_sel <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = demo_sex_date_sel()$cases.adj,
+                   hosp = demo_sex_date_sel()$hosp.adj,
+                   deaths = demo_sex_date_sel()$deaths.adj)
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = demo_sex_date_sel()$cases,
+                   hosp = demo_sex_date_sel()$hosp,
+                   deaths = demo_sex_date_sel()$deaths)
+        }
+        
     })
     
     # Plot Customization
@@ -740,26 +808,45 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    demo_sex_title <- reactive({
+        if(input$demo_pop_adj) {
+            switch(input$demo_mode,
+                   cases = "Cases by Sex\n(Population Adjusted)",
+                   hosp = paste0("Hosipitalizations by Sex\n",
+                                 "(Population Adjusted)"),
+                   deaths = "Deaths by Sex\n(Population Adjusted)")
+        }
+        else {
+            switch(input$demo_mode,
+                   cases = "Cases by Sex\n(Total)",
+                   hosp = paste0("Hosipitalizations by Sex\n",
+                                 "(Total)"),
+                   deaths = "Deaths by Sex\n(Total)")
+            
+        }
+    })
 
     ## Plots
     
     # Age Plot
     
-    plotly(
-        age,
-        x = ~age_group,
-        y = ~demo_mode_sel(),
-        type = "histogram",
-        title = ~demo_age_title
-    )
+    output$demo_age <- renderPlotly({
+        plot_ly(
+            x = ~demo_age_date_sel()$age_group,
+            y = ~demo_age_mode_sel(),
+            type = "bar"
+            #title = ~demo_age_title()
+        )
+
+    })
     
     # Race Plot
     
     output$demo_race <- renderPlotly({
         plot_ly(
             race,
-            labels = ~demo_date_sel()$race_and_ethnicity,
-            values = ~demo_mode_sel(),
+            labels = ~demo_race_date_sel()$race_and_ethnicity,
+            values = ~demo_race_mode_sel(),
             type = "pie",
             title = ~demo_race_title()
         )
@@ -768,11 +855,12 @@ shinyServer(function(input, output, session) {
     
     # Sex Plot
     
-    #plotly(
-        #sex,
-        #x = ~sex$sex,
-        #y = ~ ,
-        #type = "histogram",
-        #title = "Sexes affected by COVID-19"
-    #)
+    output$demo_sex <- renderPlotly({
+        plot_ly(
+            x = ~demo_sex_date_sel()$sex,
+            y = ~demo_sex_mode_sel(),
+            type = "bar"
+            #title = ~demo_sex_title()
+        )
+    })
 })
