@@ -646,7 +646,7 @@ shinyServer(function(input, output, session) ({
         )
     })
     
-    ## BY COUNTY PAGE #########################################################
+    ## BY COUNTY PAGE ##########################################################
     ## DEMOGRAPHICS PAGE #######################################################
     
     ## Date Selector
@@ -701,7 +701,6 @@ shinyServer(function(input, output, session) ({
         else {
             subset(demo_age_target(), report_date == input$demo_date)
         }
-        
     })
     
     # Race
@@ -713,7 +712,6 @@ shinyServer(function(input, output, session) ({
         else {
             subset(demo_race_target(), report_date == input$demo_date)
         }
-        
     })
     
     # Sex
@@ -725,7 +723,6 @@ shinyServer(function(input, output, session) ({
         else {
             subset(demo_sex_target(), report_date == input$demo_date)
         }
-        
     })
     
     ## Mode chosen by user
@@ -744,7 +741,6 @@ shinyServer(function(input, output, session) ({
                    hosp = demo_age_date_sel()$hosp,
                    deaths = demo_age_date_sel()$deaths)
         }
-        
     })
     
     # Race
@@ -761,7 +757,6 @@ shinyServer(function(input, output, session) ({
                    hosp = demo_race_date_sel()$hosp,
                    deaths = demo_race_date_sel()$deaths)
         }
-
     })
     
     # Sex
