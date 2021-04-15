@@ -40,6 +40,7 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
         fluidRow(
             column(6, wellPanel(htmlOutput("demo_date_ui"),
                       radioButtons("demo_mode","Show", selected = "cases",
+                                   choices = list("Cases" = "cases",
                                                   "Hospitilizations" = "hosp",
                                                   "Deaths" = "deaths")),
                       checkboxInput("demo_pop_adj", "Adjust for Population",
