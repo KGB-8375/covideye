@@ -38,21 +38,20 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
     tabPanel("Demographics",
         tags$h1("Who COVID-19 is affecting the most"),
         fluidRow(
-            column(6, tags$h2("Age Groups", align = 'center'),
-                      plotlyOutput("demo_age")),
             column(6, wellPanel(htmlOutput("demo_date_ui"),
-                          radioButtons("demo_mode","Show", selected = "cases",
-                              choices = list("Cases" = "cases",
-                                             "Hospitilizations" = "hosp",
-                                             "Deaths" = "deaths")),
-                          checkboxInput("demo_pop_adj", "Adjust for Population",
-                                         value = TRUE)),)
+                      radioButtons("demo_mode","Show", selected = "cases",
+                                                  "Hospitilizations" = "hosp",
+                                                  "Deaths" = "deaths")),
+                      checkboxInput("demo_pop_adj", "Adjust for Population",
+                                    value = TRUE)),),
+            column(6, tags$h2("Age Groups", align = 'center'),
+                      plotlyOutput("demo_age"))
         ),
         fluidRow(
             column(6, align = 'center', tags$h2("Sex"),
-                   plotlyOutput("demo_sex", width = '50%')),
+                      plotlyOutput("demo_sex", width = '50%')),
             column(6, tags$h2("Race", align = 'center'),
-                   plotlyOutput("demo_race"))
+                      plotlyOutput("demo_race"))
         )
 
     ),
