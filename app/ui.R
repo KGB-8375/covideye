@@ -4,7 +4,7 @@ library(plotly)
 library(shinythemes)
 
 # Define UI for application that draws a histogram
-shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
+shinyUI(navbarPage( "CovidEye", windowTitle = "CovidEye",
                     theme = shinytheme("cosmo"),
     ## DASHBOARD PAGE ##########################################################
     tabPanel("Dashboard",
@@ -33,7 +33,7 @@ shinyUI(navbarPage( "RVA CovidView", windowTitle = "RVA CovidView",
     ),
     ## BY COUNTRY PAGE #########################################################
     tabPanel("By County",
-        "Abubu"),
+        "This page is intentionally blank."),
     ## DEMOGRAPHICS PAGE #######################################################
     tabPanel("Demographics",
         tags$h1("Who COVID-19 is affecting the most"),

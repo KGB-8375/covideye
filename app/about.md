@@ -24,7 +24,7 @@ This project is open source and written in R. All of the
 COVID-19 related data that is used in this project comes from the 
 [Virginia Department of Health](https://data.virginia.gov). The population and
 geographical data is from the 2019 census. The project is available for viewers
-on [GitHub](https://github.com/KGB-8375/rva-covidview).
+on [GitHub](https://github.com/KGB-8375/covideye).
 
 # Credits
 
