@@ -1,23 +1,22 @@
 ## LIBRARIES ###################################################################
-library(shiny)     # Building interactive websites
-library(rgdal)     # Reading spatial data files
-library(RSocrata)  # Reading data from socrata sites (VDH)
-library(sp)        # Working with spatial data
-library(leaflet)   # Graphing interactive maps
-library(dplyr)     # Arranging & modifying data
-library(zoo)       # Calculating a rolling mean
-library(plotly)    # Graphing interactive plots
-library(BAMMtools) # Jenks breaks
+library(shiny)      # Building interactive websites
+library(data.table) # Quickly read from .csv files
+library(rgdal)      # Reading spatial data files
+library(sp)         # Working with spatial data
+library(leaflet)    # Graphing interactive maps
+library(dplyr)      # Arranging & modifying data
+library(zoo)        # Calculating a rolling mean
+library(plotly)     # Graphing interactive plots
+library(BAMMtools)  # Jenks breaks
 ## STATIC DATA #################################################################
 
-## Retrieve Data
-
-cases <- read.socrata("https://data.virginia.gov/resource/bre9-aqqr.json")
-confd <- read.socrata("https://data.virginia.gov/resource/uqs3-x7zh.json")
-pop   <- read.socrata("https://data.virginia.gov/resource/5s4f-hthh.json")
-age <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
-race <- read.socrata("https://data.virginia.gov/resource/9sba-m86n.json")
-sex <- read.socrata("https://data.virginia.gov/resource/tdt3-q47w.json")
+## Read cached Data
+cases <- fread(data.table = F, "DATA/temp/cases.csv")
+confd <- fread(data.table = F, "DATA/temp/confd.csv")
+pop   <- fread(data.table = F, "DATA/temp/pop.csv")
+race  <- fread(data.table = F, "DATA/temp/race.csv")
+sex   <- fread(data.table = F, "DATA/temp/sex.csv")
+age   <- fread(data.table = F, "DATA/temp/age.csv")
 spdf  <- readOGR(
     dsn = "./DATA/shapefile",
     layer = "cb_2019_us_county_500k"
