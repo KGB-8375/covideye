@@ -28,8 +28,7 @@ for a huge amount of flexibility, offering graphs that are potentially unavailab
 substaintial amount of server processing power, however we are doing our best to keep the app running optimized and responsive for end
 users.
 
-A live demo of our app can be viewed
-[here](https://rvacovidview.shinyapps.io/dashboard/)!
+### Our site can be viewed at [covideye.org](https://covideye.org)
 
 ## Copying
 
