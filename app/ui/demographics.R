@@ -3,6 +3,7 @@
 makeDemographics <- function() {
   return(
     div(
+      # Title
       h1("Who COVID-19 is affecting the most"),
       # Top Row
       fluidRow(

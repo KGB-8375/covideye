@@ -3,7 +3,7 @@
 makeByCounty <- function() {
   return(
     div(
-      #title
+      # Title
       h1("Information for your area"),
       # Placeholder
       "This page is intentionally blank."
