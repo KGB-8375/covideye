@@ -42,4 +42,4 @@ vignettes/*.pdf
 rsconnect
 
 # Temporary data
-app/DATA/temp
+app/DATA/temp/*
