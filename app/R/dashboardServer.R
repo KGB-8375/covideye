@@ -1,10 +1,9 @@
 # DASHBOARD SERVER MODULES
 
-mapServer <- function(id) {
+mapServer <- function(id, spdf) {
   moduleServer(
     id,
     function(input, output, session) {
-      
       # Static part of the map (bounding box)
       output$map <- renderLeaflet({
         # Set default view to bounding box of VA
@@ -22,16 +21,17 @@ mapServer <- function(id) {
         dateInput(
           ns("date"),
           label = "Select Date",
-          format = "m/dd/yyyy"
+          format = "m/dd/yyyy",
+          max = "2021-07-16"
         )
       })
       
       # Date selection (fixed)
       date_sel <- reactive({
         if(length(input$date) == 0) {
-          slice_max(spdf@data, date)
+          subset(spdf, date == max(spdf@data$date))
         } else {
-          filter(spdf@data, date == input$date)
+          subset(spdf, date == input$date)
         }
       })
       
@@ -129,9 +129,10 @@ mapServer <- function(id) {
       
       # Update map
       observe({
+        ns  <- session$ns
         pal <- color_fun()
         
-        leafletProxy("map", data = date_sel()) %>%
+        leafletProxy(ns("map"), data = date_sel()) %>%
           clearControls() %>%
           addLegend(
             position = "bottomleft",
