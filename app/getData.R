@@ -5,6 +5,9 @@ library(RSocrata)   # Reading data from Socrata sites (VDH)
 library(dplyr)      # Arranging & modifying data
 library(data.table) # Write data frame to .csv
 
+# Create Directories
+dir.create("DATA")
+
 ## Population
 # https://data.virginia.gov/dataset/VDH-PublicUseDataset-NCHS-Population/5s4f-hthh
 

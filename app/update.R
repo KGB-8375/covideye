@@ -1,9 +1,12 @@
-## Update all temporary data, including wrangling
+## Retrieve all temporary data
 
 # Libraries
 library(RSocrata)   # Reading data from Socrata sites (VDH)
 library(dplyr)      # Arranging & modifying data
 library(data.table) # Write data frame to .csv
+
+# Create Directories
+dir.create("DATA/temp", recursive = TRUE)
 
 ## Cases by locality
 # https://data.virginia.gov/Government/VDH-COVID-19-PublicUseDataset-Cases/bre9-aqqr
