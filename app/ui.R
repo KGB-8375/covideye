@@ -23,11 +23,11 @@ shinyUI(
             title = "By County",
             byCountyUI("byCounty")
         ),
-        # Demographics
-        tabPanel(
-            title = "Demographics",
-            demographicsUI("demographics")
-        ),
+        ## Demographics
+        #tabPanel(
+        #    title = "Demographics",
+        #    demographicsUI("demographics")
+        #),
         # About
         tabPanel(
             title = "About",

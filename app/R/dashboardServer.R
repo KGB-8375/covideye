@@ -1,9 +1,55 @@
 # DASHBOARD SERVER MODULES
 
+statsServer <- function(id, covid.confd, pop) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+      stats <- covid.confd %>%
+        slice_max(date) %>%
+        bind_cols(list(pop = sum(pop$pop)))
+      
+      fancy_num <- function(x) {
+        format(
+          x,
+          big.mark = ",",
+          scientific = FALSE
+        )
+      }
+      
+      output$cases <- renderUI({
+        tagList(
+          h2("Total Cases: ", fancy_num(stats$cases.t)),
+          h4(fancy_num(stats$cases.c), "Confirmed | ",
+             fancy_num(stats$cases.p), "Probable")
+        )
+      })
+      
+      output$hospts <- renderUI({
+        tagList(
+          h2("Total Hospitalizations: ", fancy_num(stats$hospts.t)),
+          h4(fancy_num(stats$hospts.c), "Confirmed | ",
+             fancy_num(stats$hospts.p), "Probable")
+        )
+      })
+      
+      output$deaths <- renderUI({
+        tagList(
+          h2("Total Deaths: ", fancy_num(stats$deaths.t)),
+          h4(fancy_num(stats$deaths.c), "Confirmed | ",
+             fancy_num(stats$deaths.p), "Probable")
+        )
+      })
+    }
+  )
+}
+
 mapServer <- function(id, spdf) {
   moduleServer(
     id,
     function(input, output, session) {
+      spdf.min <- min(spdf$date)
+      spdf.max <- max(spdf$date)
+      
       # Static part of the map (bounding box)
       output$map <- renderLeaflet({
         # Set default view to bounding box of VA
@@ -20,16 +66,18 @@ mapServer <- function(id, spdf) {
         
         dateInput(
           ns("date"),
-          label = "Select Date",
+          label  = "Select Date",
           format = "m/dd/yyyy",
-          max = "2021-07-16"
+          max    = spdf.max,
+          min    = spdf.min,
+          value  = spdf.max
         )
       })
       
       # Date selection (fixed)
       date_sel <- reactive({
         if(length(input$date) == 0) {
-          subset(spdf, date == max(spdf@data$date))
+          subset(spdf, date == spdf.max)
         } else {
           subset(spdf, date == input$date)
         }
@@ -189,41 +237,43 @@ dailyRatesServer <- function(id) {
   )
 }
 
-dashboardServer <- function(id) {
+dashboardServer <- function(id, spdf, covid.confd, pop) {
   moduleServer(
     id,
     function(input, output, session) {
-      output$stats <- renderUI({
-        wellPanel(
-          fluidRow(
-            column(
-              width = 4,
-              "placeholder"
-            ),
-            column(
-              width = 4,
-              "placeholder"
-              
-            ),
-            column(
-              width = 4,
-              "placeholder"
-            )
-          )
-        )
-      })
+      #output$stats <- renderUI({
+      #wellPanel(
+      #  fluidRow(
+      #    column(
+      #      width = 4,
+      #      "placeholder"
+      #    ),
+      #    column(
+      #      width = 4,
+      #      "placeholder"
+      #      
+      #    ),
+      #    column(
+      #      width = 4,
+      #      "placeholder"
+      #    )
+      #  )
+      #)
+      #)}
       
-      mapServer("map")
-      
-      dailyRatesServer("rates")
-      
-      output$highest_cases <- renderPlotly({
+      statsServer("stats", covid.confd, pop)
         
-      })
+      mapServer("map", spdf)
       
-      output$highest_rates <- renderPlotly({
+      #dailyRatesServer("rates", spdf)
+      
+      #output$highest_cases <- renderPlotly({
+      #  
+      #})
         
-      })
+      #output$highest_rates <- renderPlotly({
+      #  
+      #})
     }
   )
 } 
