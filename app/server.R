@@ -1,4 +1,6 @@
-## LIBRARIES ###################################################################
+## Main server-side app
+
+# Libraries
 library(shiny)      # Building interactive websites
 library(data.table) # Quickly read from .csv files
 library(rgdal)      # Reading spatial data files
@@ -8,92 +10,18 @@ library(dplyr)      # Arranging & modifying data
 library(zoo)        # Calculating a rolling mean
 library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
-## STATIC DATA #################################################################
 
-## Read cached Data
-cases <- fread(data.table = F, "DATA/temp/cases.csv")
-confd <- fread(data.table = F, "DATA/temp/confd.csv")
-pop   <- fread(data.table = F, "DATA/temp/pop.csv")
-race  <- fread(data.table = F, "DATA/temp/race.csv")
-sex   <- fread(data.table = F, "DATA/temp/sex.csv")
-age   <- fread(data.table = F, "DATA/temp/age.csv")
-spdf  <- readOGR(
-    dsn = "./DATA/shapefile",
+# Read cached data tables
+covid.local <- fread("DATA/temp/covid_local.csv")
+covid.confd <- fread("DATA/temp/covid_confd.csv")
+covid.age   <- fread("DATA/temp/covid_age.csv")
+covid.race  <- fread("DATA/temp/covid_race.csv")
+covid.sex   <- fread("DATA/temp/covid_sex.csv")
+pop         <- fread("DATA/pop.csv")
+spdf        <- readOGR(
+    dsn   = "./DATA/shapefile",
     layer = "cb_2019_us_county_500k"
 )
-
-##  Fix Data
-
-# Changing types
-cases$report_date       <- as.Date(cases$report_date)
-cases$total_cases       <- as.numeric(cases$total_cases)
-cases$deaths            <- as.numeric(cases$deaths)
-cases$hospitalizations  <- as.numeric(cases$hospitalizations)
-
-confd$report_date       <- as.Date(confd$report_date)
-confd$number_of_cases   <- as.numeric(confd$number_of_cases)
-confd$number_of_deaths  <- as.numeric(confd$number_of_deaths)
-confd$number_of_hospitalizations <-
-    as.numeric(confd$number_of_hospitalizations)
-
-pop$population_estimate <- as.numeric(pop$population_estimate)
-
-age$report_date <- as.Date(age$report_date)
-age <- subset(age, report_date >= as.Date("2020-04-21"))
-age$number_of_cases <- as.numeric(age$number_of_cases)
-age$number_of_hospitalizations <- 
-    as.numeric(age$number_of_hospitalizations)
-age$number_of_deaths <- as.numeric(age$number_of_deaths)
-
-race$report_date <- as.Date(race$report_date)
-race$number_of_cases <- as.numeric(race$number_of_cases)
-race$number_of_hospitalizations <- 
-    as.numeric(race$number_of_hospitalizations)
-race$number_of_deaths <- as.numeric(race$number_of_deaths)
-
-sex$report_date <- as.Date(sex$report_date)
-sex <- subset(sex, report_date >= as.Date("2020-04-13"))
-sex$number_of_cases <- as.numeric(sex$number_of_cases)
-sex$number_of_hospitalizations <- 
-    as.numeric(sex$number_of_hospitalizations)
-sex$number_of_deaths <- as.numeric(sex$number_of_deaths)
-
-# Delete unneeded cols
-cases <- cases %>% select(!c(vdh_health_district))
-
-pop <- subset(pop, year == max(year))
-pop <- pop %>% select(!c(health_district,
-                         health_region, year)) %>%
-    rename(est = population_estimate)
-
-# use only VA info
-spdf <- subset(spdf, STATEFP == "51")
-# we just need the fips code, dump other data and rename GEOID to fips
-spdf@data <- spdf@data %>% select(fips = GEOID)
-# now kiss
-spdf <- merge(spdf, cases, duplicateGeoms = TRUE)
-rm(cases)
-
-# split confirmed and probable cases
-confd.c <- subset(confd, case_status == "Confirmed") %>% arrange(report_date)
-confd.p <- subset(confd, case_status == "Probable")  %>% arrange(report_date)
-# recombine as columns
-confd <- data.frame(report_date = confd.c$report_date,
-                    cases.c = confd.c$number_of_cases,
-                    cases.p = confd.p$number_of_cases,
-                    deaths.c = confd.c$number_of_deaths,
-                    deaths.p = confd.p$number_of_deaths,
-                    hosp.c = confd.c$number_of_hospitalizations,
-                    hosp.p = confd.p$number_of_hospitalizations)
-# remove temp values
-rm(confd.c, confd.p)
-
-# get total current population estimates for map
-pop.total <- pop %>%
-    group_by(fips) %>%
-    summarize(pop = sum(est))
-spdf <- merge(spdf, pop.total)
-rm(pop.total)
 
 ## Custom data
 
@@ -117,6 +45,21 @@ demo_max <- min(sex_max, age_max, race_max)
 demo_min <- max(sex_min, age_min, race_min)
 
 ## Generated Data
+
+# use only VA info
+spdf <- subset(spdf, STATEFP == "51")
+# we just need the fips code, dump other data and rename GEOID to fips
+spdf@data <- spdf@data %>% select(fips = GEOID)
+# now kiss
+spdf <- merge(spdf, cases, duplicateGeoms = TRUE)
+rm(cases)
+
+# get total current population estimates for map
+pop.total <- pop %>%
+    group_by(fips) %>%
+    summarize(pop = sum(est))
+spdf <- merge(spdf, pop.total)
+rm(pop.total)
 
 # Get the covid cases based on population density
 spdf@data <- spdf@data %>%

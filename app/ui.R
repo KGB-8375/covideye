@@ -1,3 +1,6 @@
+## Main client-side app
+
+# Libraries
 library(shiny)
 library(leaflet)
 library(plotly)
@@ -8,7 +11,7 @@ source("ui/dashboard.R",    local = TRUE)
 source("ui/byCounty.R",     local = TRUE)
 source("ui/demographics.R", local = TRUE)
 
-# Define UI for application that draws a histogram
+# Main UI for website
 shinyUI(
     navbarPage(
         title       = "CovidEye",
