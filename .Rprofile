@@ -1,1 +1,2 @@
-setwd("./app")
+setwd("app")
+source("update.R")

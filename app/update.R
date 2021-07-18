@@ -22,6 +22,7 @@ covid.local <- covid.local %>%
   )
 
 fwrite(covid.local, "DATA/temp/covid_local.csv")
+rm(covid.local)
 
 ## Cases by confirmation
 # https://data.virginia.gov/Government/VDH-COVID-19-PublicUseDataset-Cases_By-Confirmatio/uqs3-x7zh
@@ -52,6 +53,7 @@ covid.confd <- covid.confd %>%
   )
 
 fwrite(covid.confd, "DATA/temp/covid_confd.csv")
+rm(covid.confd)
 
 ## Cases by age group
 # https://data.virginia.gov/Government/VDH-COVID-19-PublicUseDataset-Cases_By-Age-Group/uktn-mwig
@@ -79,6 +81,7 @@ covid.age <- covid.age %>%
   )
 
 fwrite(covid.age, "DATA/temp/covid_age.csv")
+rm(covid.age)
 
 ## Cases by race
 # https://data.virginia.gov/Government/VDH-COVID-19-PublicUseDataset-Cases_By-Race-Ethnic/9sba-m86n
@@ -106,6 +109,7 @@ covid.race <- covid.race %>%
   )
 
 fwrite(covid.race, "DATA/temp/covid_race.csv")
+rm(covid.race)
 
 ## Cases by sex
 # https://data.virginia.gov/Government/VDH-COVID-19-PublicUseDataset-Cases_By-Sex/tdt3-q47w
@@ -133,3 +137,4 @@ covid.sex <- covid.sex %>%
   )
 
 fwrite(covid.sex, "DATA/temp/covid_sex.csv")
+rm(covid.sex)

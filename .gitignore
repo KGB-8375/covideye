@@ -41,5 +41,5 @@ vignettes/*.pdf
 # App login data
 rsconnect
 
-# Temporary data
-app/DATA/temp/*
+# Downloaded/generated data
+app/DATA
