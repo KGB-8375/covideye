@@ -6,11 +6,6 @@ library(leaflet)
 library(plotly)
 library(shinythemes)
 
-# Scripts
-source("ui/dashboard.R",    local = TRUE)
-source("ui/byCounty.R",     local = TRUE)
-source("ui/demographics.R", local = TRUE)
-
 # Main UI for website
 shinyUI(
     navbarPage(
@@ -21,17 +16,17 @@ shinyUI(
         # Dashboard
         tabPanel(
             title = "Dashboard",
-            makeDashboard()
+            dashboardUI("dashboard")
         ),
         # By County
         tabPanel(
             title = "By County",
-            makeByCounty()
+            byCountyUI("byCounty")
         ),
         # Demographics
         tabPanel(
             title = "Demographics",
-            makeDemographics()
+            demographicsUI("demographics")
         ),
         # About
         tabPanel(

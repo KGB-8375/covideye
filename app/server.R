@@ -7,6 +7,7 @@ library(rgdal)      # Reading spatial data files
 library(sp)         # Working with spatial data
 library(leaflet)    # Graphing interactive maps
 library(dplyr)      # Arranging & modifying data
+library(spdplyr)    # Use dplyr verbs on spatial data
 library(zoo)        # Calculating a rolling mean
 library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
@@ -23,68 +24,49 @@ spdf        <- readOGR(
     layer = "cb_2019_us_county_500k"
 )
 
-## Custom data
+# Prepare data
 
-# Min and max dates in data
-spdf.min <- min(spdf$report_date)
-spdf.max <- max(spdf$report_date)
+## SPDF (Spatial data file)
+pop.local <- pop %>%
+    group_by(fips) %>%
+    summarize(pop = sum(pop))
 
-confd.min <- min(confd$report_date)
-confd.max <- max(confd$report_date)
+spdf <- spdf %>%
+    filter(STATEFP == "51") %>%
+    transmute(fips = GEOID) %>%
+    merge(covid.local, duplicateGeoms = TRUE) %>%
+    merge(pop.local,   duplicateGeoms = TRUE) %>%
+    mutate(
+        cases.adj  = cases  * 100000 / pop,
+        hospts.adj = hospts * 100000 / pop,
+        deaths.adj = deaths * 100000 / pop
+    )
 
-age_max <- max(age$report_date)
-age_min <- "2020-04-21"
+rm(covid.local, pop.local)
 
-race_max <- max(race$report_date)
-race_min <- min(race$report_date)
+## Confirmed cases
+covid.confd <- covid.confd %>%
+    arrange(date) %>%
+    mutate(
+        cases.t  = cases.c  + cases.p,
+        hospts.t = hospts.c + hospts.p,
+        deaths.t = deaths.c + deaths.p
+    ) %>%
+    mutate(
+        rate.c = cases.c - lag(cases.c),
+        rate.p = cases.p - lag(cases.p),
+        rate.t = cases.t - lag(cases.t)
+    ) %>%
+    mutate(
+        avg = rollmean(rate.t, 7, fill = NA)
+    )
 
-sex_max <- max(sex$report_date)
-sex_min <- "2020-04-13"
-
-demo_max <- min(sex_max, age_max, race_max)
-demo_min <- max(sex_min, age_min, race_min)
+## Stats
+stats <- covid.confd %>%
+    slice_max(date) %>%
+    bind_cols(list(pop = sum(pop$pop)))
 
 ## Generated Data
-
-# use only VA info
-spdf <- subset(spdf, STATEFP == "51")
-# we just need the fips code, dump other data and rename GEOID to fips
-spdf@data <- spdf@data %>% select(fips = GEOID)
-# now kiss
-spdf <- merge(spdf, cases, duplicateGeoms = TRUE)
-rm(cases)
-
-# get total current population estimates for map
-pop.total <- pop %>%
-    group_by(fips) %>%
-    summarize(pop = sum(est))
-spdf <- merge(spdf, pop.total)
-rm(pop.total)
-
-# Get the covid cases based on population density
-spdf@data <- spdf@data %>%
-    mutate(total_cases.adj = total_cases * 100000 / pop,
-           hospitalizations.adj = hospitalizations * 100000 / pop,
-           deaths.adj = deaths * 100000 / pop)
-
-# Calculate the daily rate of confirmed vs probable cases
-confd <- confd %>%
-    # Sort by report date
-    arrange(report_date) %>%
-    # Total cases
-    mutate(cases.t = cases.c + cases.p,
-           deaths.t = deaths.c + deaths.p,
-           hosp.t = hosp.c + hosp.p) %>%
-    # Rates of confirmed, probable, total
-    mutate(rate.c = cases.c - lag(cases.c),
-           rate.p = cases.p - lag(cases.p),
-           rate.t = cases.t - lag(cases.t)) %>%
-    # 7-day moving average of total
-    mutate(avg = rollmean(rate.t, 7, fill = NA))
-
-# Statistics numbers
-stats <- subset(confd, report_date == confd.max)
-stats.p <- sum(pop$est)
 
 # Case rates for each county
 rates <- spdf@data %>%
@@ -165,210 +147,9 @@ sex.adj <- sex.adj %>%
            hosp.adj = hosp*100000/est,
            deaths.adj = deaths*100000/est)
 
-## SERVER FUNCTIONS ############################################################
+# Main server functionality for website
 shinyServer(function(input, output, session) ({
     
-    ## DASHBOARD PAGE ##########################################################
-    
-    # Quick Statistics
-    output$db_stats <- renderUI({
-        wellPanel(
-            fluidRow(
-                column(4, h2("Total Cases: ", 
-                             format(stats$cases.t, 
-                                    big.mark = ',', 
-                                    scientific = F), 
-                             align = 'center'),
-                       
-                       h3("(", format(stats$cases.c,
-                                      big.mark = ',',
-                                      scientific = F)
-                          , " Confirmed )", 
-                          align = 'center')),
-                
-                column(4, h2("Total Hospitalizations: ", 
-                             format(stats$hosp.t,
-                                    big.mark = ',',
-                                    scientific = F),
-                             align = 'center'),
-                       
-                       h3("(", format(stats$hosp.c,
-                                      big.mark = ',',
-                                      scientific = F),
-                          " Confirmed )",
-                          align = 'center')),
-                
-                column(4, h2("Total Deaths: ", 
-                             format(stats$deaths.t,
-                                    big.mark = ',',
-                                    scientific = F),
-                             align = 'center'),
-                       
-                       h3("(", format(stats$deaths.c,
-                                      big.mark = ',',
-                                      scientific = F), 
-                          " Confirmed )",
-                          align = 'center'))
-            )
-        )
-    })
-    
-    ## Map Section
-    
-    # Date selector
-    output$db_date_ui <- renderUI({
-        dateInput("db_date", "Select Date:",
-                  min = spdf.min, 
-                  max = spdf.max,
-                  value = spdf.max,
-                  format = "mm/dd/yy")
-    })
-    
-    # Date Selection
-    db_date_sel <- reactive({
-        # Prevent errors while loading ui
-        if(length(input$db_date) == 0) {
-            subset(spdf, report_date == spdf.max)
-        }
-        else {
-            subset(spdf, report_date == input$db_date)
-        }
-    })
-    
-    # Change legend title for selection
-    db_target_title <- reactive({
-        if(input$db_pop_adj) {
-            switch (input$db_mode,
-                    pop="Total Population",
-                    cases="Cases per 100k",
-                    hosp="Hospitalizations per 100k",
-                    deaths="Deaths per 100k"
-            )
-        } else {
-            switch (input$db_mode,
-                    pop="Total Population",
-                    cases="Total Cases",
-                    hosp="Total Hospitalizations",
-                    deaths="Total Deaths"
-            )
-        }
-    })
-    
-    # Change choropleth target
-    db_target_val <- reactive({
-        if(input$db_pop_adj) {
-            switch (input$db_mode,
-                    pop=db_date_sel()$pop,
-                    cases=db_date_sel()$total_cases.adj,
-                    hosp=db_date_sel()$hospitalizations.adj,
-                    deaths=db_date_sel()$deaths.adj
-            )
-        } else {
-            switch (input$db_mode,
-                    pop=db_date_sel()$pop,
-                    cases=db_date_sel()$total_cases,
-                    hosp=db_date_sel()$hospitalizations,
-                    deaths=db_date_sel()$deaths
-            )
-        }
-    })
-    
-    # Change choropleth color scheme
-    db_target_col <- reactive({
-        switch (input$db_mode,
-                pop="Greens",
-                cases="YlOrRd",
-                hosp="Purples",
-                deaths="Greys"
-        )
-    })
-    
-    # Categories for map
-    db_map_categories <- reactive({
-        # Use Jenks Natural Breaks to find *8* bin categories
-        categories <- getJenksBreaks(db_target_val(), 9)
-        
-        # Beautify breaks
-        categories <- unique(ceiling(signif(categories, digits = 3)))
-        categories[length(categories)] <- Inf
-        categories[1] <- 0
-        
-        return(categories)
-    })
-    
-    # Function to color map
-    db_map_cols <- reactive({
-        colorBin(palette = db_target_col(),
-                 domain = db_target_val(),
-                 bins = db_map_categories(),
-                 na.color = "black")
-    })
-    
-    # Tooltips for map
-    db_map_tooltip <- reactive({
-        paste0(
-            "<b>", db_date_sel()$locality, "</b> (",
-            format(db_date_sel()$report_date, "%D"),")</br>",
-            "Total Cases: ", db_date_sel()$total_cases, "</br>",
-            "Hospitalizations: ", db_date_sel()$hospitalizations, "</br>",
-            "Deaths: ", db_date_sel()$deaths, "</br>",
-            "Population: ", db_date_sel()$pop, "</br></br>",
-            "Cases per 100k: ", 
-            floor(db_date_sel()$total_cases.adj), "</br>",
-            "Hospitalizations per 100k: ", 
-            floor(db_date_sel()$hospitalizations.adj), "</br>",
-            "Deaths per 100k: ", 
-            floor(db_date_sel()$deaths.adj), "</br>"
-        ) %>% 
-        lapply(htmltools::HTML)
-    })
-    
-    # Static parts of map
-    output$db_map <- renderLeaflet({
-        # Set default view to bounding box of VA
-        bounds <- bbox(spdf) %>% as.vector()
-        leaflet(spdf) %>%
-            fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
-    })
-    
-    # Update map polygons
-    observe({
-        pal <- db_map_cols()
-        
-        leafletProxy("db_map", data = db_date_sel()) %>%
-            clearShapes() %>%
-            addPolygons(
-                # Set color
-                fillColor = ~pal(db_target_val()),
-                fillOpacity = 1.0,
-                
-                # Add Borders
-                stroke = T,
-                color = "grey",
-                weight = 0.6,
-                
-                # Add tooltip
-                label = db_map_tooltip(),
-                labelOptions = labelOptions(
-                    style = list("font-weight" = "normal",
-                                 padding = "3px 8px"),
-                    textsize = "13px",
-                    direction = "right"
-                )
-            )
-    })
-    
-    # Update map legend
-    observe({
-        pal <- db_map_cols()
-        
-        leafletProxy("db_map", data = db_date_sel()) %>%
-            clearControls() %>%
-            addLegend(position = "bottomleft", pal = pal, opacity = 0.9,
-                      title = db_target_title(), values = db_target_val())
-    })
-    
-    ## Daily Rates Section
     
     # Date range input
     output$db_date_rng_ui <- renderUI({
