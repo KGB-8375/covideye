@@ -1,5 +1,6 @@
 # DASHBOARD UI MODULES
 
+# Statistics
 statsUI <- function(id) {
   ns <- NS(id)
   
@@ -22,55 +23,101 @@ statsUI <- function(id) {
   )
 }
 
+# Choropleth map
 mapUI <- function(id) {
   ns <- NS(id)
   
-  fluidRow(
-    column(
+  sidebarLayout(
+    mainPanel(
       width = 9,
       leafletOutput(ns("map"))
     ),
-    column(
+    sidebarPanel(
       width = 3,
-      wellPanel(
-        htmlOutput(ns("date_ui")),
-        radioButtons(
-          ns("mode"),
-          label = "Show",
-          choices = list(
-            "Population"       = "pop",
-            "Total Cases"      = "cases",
-            "Hospitalizations" = "hospts",
-            "Deaths"           = "deaths"
-          ),
-          selected = "cases"
+      htmlOutput(ns("date_ui")),
+      radioButtons(
+        ns("mode"),
+        label = "Show",
+        choices = list(
+          "Population"       = "pop",
+          "Total Cases"      = "cases",
+          "Hospitalizations" = "hospts",
+          "Deaths"           = "deaths"
         ),
-        checkboxInput(
-          ns("adjust"),
-          label = "Adjust for population",
-          value = TRUE
-        )
+        selected = "cases"
+      ),
+      checkboxInput(
+        ns("adjust"),
+        label = "Adjust for population",
+        value = TRUE
       )
     )
   )
 }
 
-#dailyRatesUI <- function(id) {
-#  ns <- NS(id)
-#  
-#  fluidRow(
-#    column(
-#      width = 9,
-#      plotlyOutput("rates")
-#    ),
-#    column(
-#      width = 3,
-#      wellPanel(
-#        htmlOutput(ns("date_ui")),
-#      )
-#    )
-#  )
-#}
+# State-wide daily rates
+dailyRatesUI <- function(id) {
+  ns <- NS(id)
+  
+  tagList(
+    plotlyOutput(ns("rates")),
+    fluidRow(
+      align = "center",
+      column(
+        width = 4
+      ),
+      column(
+        width = 4,
+        inputPanel(
+          htmlOutput(ns("date_ui"))
+        )
+      ),
+      column(
+        width = 4
+      )
+    )
+  )
+}
+
+# Display county with the highest XYZ
+countyHighestUI <- function(id) {
+  ns <- NS(id)
+  
+  sidebarLayout(
+    mainPanel(
+      width = 9,
+      plotlyOutput(ns("chart"))
+    ),
+    sidebarPanel(
+      width = 3,
+      radioButtons(
+        ns("mode"),
+        label = "Show",
+        choices = list(
+          "Total Cases"      = ".c",
+          "Hospitalizations" = ".h",
+          "Deaths"           = ".d"
+        ),
+        selected = ".c"
+      ),
+      checkboxInput(
+        ns("adjust"),
+        label = "Adjust for population",
+        value = TRUE
+      ),
+      radioButtons(
+        ns("rank"),
+        label = "Rank by",
+        choices = list(
+          "Total"      = "total",
+          "Daily Rate" = "rate"
+        ),
+        selected = "total"
+      ),
+      htmlOutput(ns("list"))
+    )
+  )
+}
 
 dashboardUI <- function(id) {
   ns <- NS(id)
@@ -78,15 +125,17 @@ dashboardUI <- function(id) {
   tagList(
     # Title
     h1("The Commonwealth of Virginia"),
+    hr(),
     # Statistics
     statsUI(ns("stats")),
+    hr(),
     # Map
     mapUI(ns("map")),
-    ## Daily Rates
-    #dailyRatesUI(ns("rates")),
-    ## County with the highest cases
-    #plotlyOutput(ns("highest_cases")),
-    ## County with the highest daily rate
-    #plotlyOutput(ns("highest_rates"))
+    hr(),
+    # Daily Rates
+    dailyRatesUI(ns("rates")),
+    hr(),
+    ## County with the highest cases/rates
+    countyHighestUI(ns("highest"))
   )
 }

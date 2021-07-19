@@ -53,7 +53,13 @@ covid.confd <- covid.confd %>%
     by = "date",
     copy = TRUE,
     suffix = c(".c", ".p")
+  ) %>%
+  mutate(
+    cases.t  = cases.c  + cases.p,
+    hospts.t = hospts.c + hospts.p,
+    deaths.t = deaths.c + deaths.p
   )
+  
 
 fwrite(covid.confd, "DATA/temp/covid_confd.csv")
 rm(covid.confd)
