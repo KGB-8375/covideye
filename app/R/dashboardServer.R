@@ -55,16 +55,34 @@ mapServer <- function(id, local) {
     id,
     function(input, output, session) {
       # Prepare data
-      local.min <- min(local$date)
+      local.min <- reactive({
+        if(input$type == "rate") {
+          min(local$date) + 7 # 7-Day average kicks in
+        } else {
+          min(local$date)
+        }
+      })
+      
       local.max <- max(local$date)
+      
+      # Helper function
+      fancy_num <- function(x) {
+        x %>%
+          round() %>%
+          format(
+            big.mark = ",",
+            scientific = FALSE
+          )
+      }
       
       # Draw initial map (only sets up map zoom level)
       output$map <- renderLeaflet({
         bounds <- bbox(local) %>%
           as.vector()
         
-        leaflet(local) %>%
-          fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
+        leaflet() %>%
+          fitBounds(bounds[1], bounds[2], bounds[3], bounds[4]) %>%
+          addProviderTiles(providers$Esri.WorldGrayCanvas)
       })
       
       # Date selector input
@@ -76,82 +94,81 @@ mapServer <- function(id, local) {
           label  = "Select Date",
           format = "m/dd/yyyy",
           max    = local.max,
-          min    = local.min,
+          min    = local.min(),
           value  = local.max
         )
       })
       
-      # Date selection (missing info defaults to newest)
+      # Date selection
       date_sel <- reactive({
         req(input$date)
         
-        subset(local, date == input$date)
+        local %>%
+          filter(date == input$date)
       })
       
-      # Generate Title
+      # Generate Legend Title
       title <- reactive({
-        if(input$adjust) {
+        paste(
+          switch(
+            input$type,
+            total = "Total",
+            rate  = "Daily"
+          ),
           switch(
             input$mode,
-            pop    = "Total Population",
-            cases  = "Cases per 100k",
-            hospts = "Hospitalizations per 100k",
-            deaths = "Deaths per 100k"
-          )
-        } else {
-          switch(
-            input$mode,
-            pop    = "Total Population",
-            cases  = "Total Cases",
-            hospts = "Total Hospitalizations",
-            deaths = "Total Deaths"
-          )
-        }
+            .c  = "Cases",
+            .h = "Hospitalizations",
+            .d = "Deaths"
+          ),
+          if(input$adjust) {
+            "per 100k"
+          }
+        )
       })
       
       # Display value
       value <- reactive({
-        if(input$adjust) {
-          switch(
-            input$mode,
-            pop    = date_sel()$pop,
-            cases  = date_sel()$cases.adj,
-            hospts = date_sel()$hospts.adj,
-            deaths = date_sel()$deaths.adj
-          )
-        } else {
-          switch(
-            input$mode,
-            pop    = date_sel()$pop,
-            cases  = date_sel()$cases,
-            hospts = date_sel()$hospts,
-            deaths = date_sel()$deaths
-          )
-        }
+        date_sel() %>%
+          select(
+            ends_with(paste0(input$type, input$mode, if(input$adjust) {".adj"}))
+          ) %>%
+          # Column 1 -> vector
+          .[[1]]
       })
       
       # Color range
       color <- reactive({
         switch(
           input$mode,
-          pop    = "Greens",
-          cases  = "YlOrRd",
-          hospts = "Purples",
-          deaths = "Greys"
+          .c = "YlOrRd",
+          .h = "Purples",
+          .d = "Greys"
         )
       })
       
       # Binning categories
       categories <- reactive({
         # Use Jenks Natural Breaks to find *8* bin categories
-        categories <- getJenksBreaks(value(), 9)
-        
-        # Beautify breaks
-        categories <- unique(ceiling(signif(categories, digits = 3)))
-        categories[length(categories)] <- Inf
-        categories[1] <- 0
-        
-        return(categories)
+        if(input$type == "total") {
+          value() %>%
+            getJenksBreaks(9) %>%
+            # Make them easier to read
+            signif(3) %>%
+            ceiling() %>%
+            unique() %>%
+            replace(1, 0) %>%
+            replace(length(.), Inf)
+        } else {
+          value() %>%
+            getJenksBreaks(9) %>%
+            # Make them easier to read
+            round() %>%
+            if_else(. < 0, 0, .) %>%
+            replace(1, -Inf) %>%
+            replace(length(.), Inf) %>%
+            unique()
+        }
       })
       
       # Colorizing function
@@ -164,20 +181,67 @@ mapServer <- function(id, local) {
         )
       })
       
-      # Tooltip text
       tooltip <- reactive({
-        paste0(
-          "<b>", date_sel()$local, "</b> (", format(date_sel()$date, "%D"), ")</br>",
-          "Total Cases: ",                   date_sel()$cases, "</br>",
-          "Hospitalizations: ",              date_sel()$hospts, "</br>",
-          "Deaths: ",                        date_sel()$deaths, "</br>",
-          "Population: ",                    date_sel()$pop, "</br></br>",
-          
-          "Cases per 100k: ",                floor(date_sel()$cases.adj), "</br>",
-          "Hospitalizations per 100k: ",     floor(date_sel()$hospts.adj), "</br>",
-          "Deaths per 100k: ",               floor(date_sel()$deaths.adj), "</br>"
-        ) %>% 
-          lapply(htmltools::HTML)
+        if(input$type == "total") {
+          sprintf(
+            "<b>%s</b> (%s)</br>
+            Total Cases: %s (%s / 100k)</br>
+            Total Hospitalizations: %s (%s / 100k)</br>
+            Total Deaths: %s (%s / 100k)</br>
+            Population: %s",
+            date_sel()$local, format(date_sel()$date, "%D"),
+            fancy_num(date_sel()$total.c), fancy_num(date_sel()$total.c.adj),
+            fancy_num(date_sel()$total.h), fancy_num(date_sel()$total.h.adj),
+            fancy_num(date_sel()$total.d), fancy_num(date_sel()$total.d.adj),
+            fancy_num(date_sel()$pop)
+          ) %>%
+            lapply(HTML)
+        } else {
+          sprintf(
+            "<b>%s</b> (%s)</br>
+            Daily Cases: %s (%s / 100k)</br>
+            Daily Hospitalizations: %s (%s / 100k)</br>
+            Daily Deaths: %s (%s / 100k)</br>
+            Population: %s",
+            date_sel()$local, format(date_sel()$date, "%D"),
+            fancy_num(date_sel()$rate.c), fancy_num(date_sel()$rate.c.adj),
+            fancy_num(date_sel()$rate.h), fancy_num(date_sel()$rate.h.adj),
+            fancy_num(date_sel()$rate.d), fancy_num(date_sel()$rate.d.adj),
+            fancy_num(date_sel()$pop)
+          ) %>%
+            lapply(HTML)
+        }
+      })
+      
+      # Red icon
+      redIcon <- icons(
+        iconUrl   = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+        shadowUrl = "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png",
+        iconWidth =   25,
+        iconHeight   = 41,
+        iconAnchorX  = 12,
+        iconAnchorY  = 41,
+        popupAnchorX = 1,
+        popupAnchorY = -34,
+        shadowWidth  = 41,
+        shadowHeight = 41
+      )
+      
+      # Draw location on map
+      observe({
+        ns <- session$ns
+        req(input$geolocation)
+
+        leafletProxy(
+          ns("map")
+        ) %>%
+          clearMarkers() %>%
+          addMarkers(
+            lng   = input$long,
+            lat   = input$lat,
+            label = "Current Location",
+            icon  = redIcon
+          )
       })
       
       # Draw full map with responsive elements
@@ -185,7 +249,10 @@ mapServer <- function(id, local) {
         ns  <- session$ns
         pal <- color_fun()
         
-        leafletProxy(ns("map"), data = date_sel()) %>%
+        leafletProxy(
+          ns("map"),
+          data = date_sel()
+        ) %>%
           clearControls() %>%
           addLegend(
             position = "bottomleft",
@@ -235,10 +302,7 @@ dailyRatesServer <- function(id, covid.confd) {
         mutate(
           rate.c = cases.c - lag(cases.c),
           rate.p = cases.p - lag(cases.p),
-          rate.t = cases.t - lag(cases.t)
-        ) %>%
-        mutate(
-          avg = rollmean(rate.t, 7, fill = NA)
+          avg    = rollmean(cases.t - lag(cases.t), 7, fill = NA)
         )
       
       # Date selector input
@@ -280,7 +344,7 @@ dailyRatesServer <- function(id, covid.confd) {
             color = "black"
           ),
           y       = ~avg,
-          name    = "Total"
+          name    = "7-Day Average"
           # Bar 1
         ) %>% add_trace (
           type  = 'bar',
@@ -345,31 +409,6 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
         select(pop) %>%
         sum()
       
-      covid.local <- covid.local %>%
-        group_by(local) %>%
-        arrange(local, date) %>%
-        # Systematically rename
-        transmute(
-          date        = date,
-          local       = local,
-          total.c     = cases,
-          total.h     = hospts,
-          total.d     = deaths,
-          total.c.adj = cases.adj,
-          total.h.adj = hospts.adj,
-          total.d.adj = deaths.adj
-        ) %>%
-        # Calculate daily change version
-        mutate(
-          rate.c     = total.c     - lag(total.c),
-          rate.h     = total.h     - lag(total.h),
-          rate.d     = total.d     - lag(total.d),
-          rate.c.adj = total.c.adj - lag(total.c.adj),
-          rate.h.adj = total.h.adj - lag(total.h.adj),
-          rate.d.adj = total.d.adj - lag(total.d.adj)
-        ) %>%
-        ungroup()
-      
       covid.confd <- covid.confd %>%
         arrange(date) %>%
         # Systematically rename
@@ -377,20 +416,23 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
           date        = date,
           total.c     = cases.t,
           total.h     = hospts.t,
-          total.d     = deaths.t,
-          total.c.adj = cases.t  * 100000 / pop,
-          total.h.adj = hospts.t * 100000 / pop,
-          total.d.adj = deaths.t * 100000 / pop
+          total.d     = deaths.t
         ) %>%
-        # Calculate daily change version
+        # Calculate the rates
         mutate(
-          rate.c     = total.c     - lag(total.c),
-          rate.h     = total.h     - lag(total.h),
-          rate.d     = total.d     - lag(total.d),
-          rate.c.adj = total.c.adj - lag(total.c.adj),
-          rate.h.adj = total.h.adj - lag(total.h.adj),
-          rate.d.adj = total.d.adj - lag(total.d.adj)
-        ) 
+          rate.c = rollmean(total.c - lag(total.c), 7, fill = NA, align = "right"),
+          rate.h = rollmean(total.h - lag(total.h), 7, fill = NA, align = "right"),
+          rate.d = rollmean(total.d - lag(total.d), 7, fill = NA, align = "right")
+        ) %>%
+        # Adjust for population
+        mutate(
+          total.c.adj = total.c * 100000 / pop,
+          total.h.adj = total.h * 100000 / pop,
+          total.d.adj = total.d * 100000 / pop,
+          rate.c.adj  = rate.c  * 100000 / pop,
+          rate.h.adj  = rate.h  * 100000 / pop,
+          rate.d.adj  = rate.d  * 100000 / pop
+        )
       
       target <- reactive({
         paste0(
@@ -399,7 +441,7 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
       })
       
       # Select target metric
-      value <- reactive({
+      value.co <- reactive({
         covid.local %>%
           select(
             date,
@@ -419,7 +461,7 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
       
       # Rank values for selection input
       rank <- reactive({
-        value() %>%
+        value.co() %>%
           slice_max(date) %>%
           arrange(desc(target.co))
       })
@@ -441,25 +483,9 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
       selection <- reactive({
         req(input$list)
         
-        if(input$rank == "total") {
-          value() %>%
-            filter(local == input$list) %>%
-            left_join(value.va(), by = "date")
-        } else {
-          value() %>%
-            filter(local == input$list) %>%
-            left_join(value.va(), by = "date") %>%
-            mutate(
-              avg.co = rollmean(target.co, k = 7, fill = NA),
-              avg.va = rollmean(target.va, k = 7, fill = NA)
-            ) %>%
-            select(
-              date,
-              local,
-              target.co = avg.co,
-              target.va = avg.va
-            )
-        }
+        value.co() %>%
+          filter(local == input$list) %>%
+          inner_join(value.va(), by = "date")
       })
       
       title_plot <- reactive({

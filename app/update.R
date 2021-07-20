@@ -19,10 +19,18 @@ covid.local <- covid.local %>%
     date   = as.Date(report_date),
     fips   = fips,
     local  = locality,
-    cases  = as.numeric(total_cases),
-    hospts = as.numeric(hospitalizations),
-    deaths = as.numeric(deaths)
-  )
+    total.c  = as.numeric(total_cases),
+    total.h = as.numeric(hospitalizations),
+    total.d = as.numeric(deaths)
+  ) %>%
+  group_by(fips) %>%
+  arrange(fips, date) %>%
+  mutate(
+    rate.c = rollmean(total.c - lag(total.c), 7, fill = NA, align = "right"),
+    rate.h = rollmean(total.h - lag(total.h), 7, fill = NA, align = "right"),
+    rate.d = rollmean(total.d - lag(total.d), 7, fill = NA, align = "right")
+  ) %>%
+  ungroup()
 
 fwrite(covid.local, "DATA/temp/covid_local.csv")
 rm(covid.local)

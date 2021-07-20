@@ -11,6 +11,7 @@ library(spdplyr)    # Use dplyr verbs on spatial data
 library(zoo)        # Calculating a rolling mean
 library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
+library(htmltools)  # Apply HTML tags for leaflet
 
 # Read cached data tables
 covid.local <- fread("DATA/temp/covid_local.csv")
@@ -35,14 +36,20 @@ pop.local <- pop %>%
     summarize(pop = sum(pop))
 
 local <- local %>%
+    # Only VA
     filter(STATEFP == "51") %>%
-    transmute(fips = GEOID) %>%
-    merge(covid.local, duplicateGeoms = TRUE) %>%
-    merge(pop.local,   duplicateGeoms = TRUE) %>%
+    # Extract fips (other data isn't useful)
+    transmute(fips = as.numeric(GEOID)) %>%
+    inner_join(covid.local, by = "fips") %>%
+    inner_join(pop.local,   by = "fips") %>%
+    # Create population adjusted vars
     mutate(
-        cases.adj  = cases  * 100000 / pop,
-        hospts.adj = hospts * 100000 / pop,
-        deaths.adj = deaths * 100000 / pop
+        total.c.adj = total.c * 100000 / pop,
+        total.h.adj = total.h * 100000 / pop,
+        total.d.adj = total.d * 100000 / pop,
+        rate.c.adj  = rate.c  * 100000 / pop,
+        rate.h.adj  = rate.h  * 100000 / pop,
+        rate.d.adj  = rate.d  * 100000 / pop
     )
 
 rm(covid.local, pop.local)

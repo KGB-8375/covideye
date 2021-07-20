@@ -24,11 +24,11 @@ navbarPage(
         title = "By County",
         byCountyUI("byCounty")
     ),
-    ## Demographics
-    #tabPanel(
-    #    title = "Demographics",
+    # Demographics
+    tabPanel(
+        title = "Demographics"
     #    demographicsUI("demographics")
-    #),
+    ),
     # About
     tabPanel(
         title = "About",

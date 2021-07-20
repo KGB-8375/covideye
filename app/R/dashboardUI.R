@@ -34,17 +34,26 @@ mapUI <- function(id) {
     ),
     sidebarPanel(
       width = 3,
+      radioGroupButtons(
+        ns("type"),
+        label = "Type of Map",
+        choices = list(
+          "Cumulative Totals" = "total",
+          "Hotspots"          = "rate"
+        ),
+        justified = TRUE,
+        status    = "danger"
+      ),
       htmlOutput(ns("date_ui")),
       radioButtons(
         ns("mode"),
         label = "Show",
         choices = list(
-          "Population"       = "pop",
-          "Total Cases"      = "cases",
-          "Hospitalizations" = "hospts",
-          "Deaths"           = "deaths"
+          "Total Cases"      = ".c",
+          "Hospitalizations" = ".h",
+          "Deaths"           = ".d"
         ),
-        selected = "cases"
+        selected = ".c"
       ),
       checkboxInput(
         ns("adjust"),
@@ -130,6 +139,7 @@ dashboardUI <- function(id) {
     statsUI(ns("stats")),
     hr(),
     # Map
+    tags$script(src = "location.js"),
     mapUI(ns("map")),
     hr(),
     # Daily Rates
