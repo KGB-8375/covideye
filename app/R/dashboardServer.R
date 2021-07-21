@@ -336,12 +336,11 @@ dailyRatesServer <- function(id, covid.confd) {
           rates_data(),
           hovertemplate = "%{y:,.0f}",
           x             = ~date
-        ) %>% add_trace (
+        ) %>% add_lines (
           # Average line
-          type    = 'scatter',
-          mode    = 'lines',
           line    = list(
-            color = "black"
+            color = "black",
+            shape = "spline"
           ),
           y       = ~avg,
           name    = "7-Day Average"
@@ -544,19 +543,24 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
         
         plot_ly(
           selection(),
-          type  = 'scatter',
-          mode  = 'lines',
           x     = ~date,
-          # County cases
-          y     = ~target.co,
-          name  = input$list,
-          color = I("red"),
           hovertemplate = "%{y:,.0f}"
-        ) %>% add_trace(
+        ) %>% add_lines (
+          # County cases
+          y    = ~target.co,
+          name = input$list,
+          line = list(
+            color = "red",
+            shape = "spline"
+          )
+        ) %>% add_lines (
           # VA average
-          y     = ~target.va,
-          name  = title_va(),
-          color = I("black")
+          y    = ~target.va,
+          name = title_va(),
+          line = list(
+            color = "black",
+            shape = "spline"
+          )
         ) %>% layout (
           # Setup
           title = title_plot(),
