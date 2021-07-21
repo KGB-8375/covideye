@@ -15,7 +15,6 @@ that is more accessable, easier to understand, and makes the data more clear and
 Our team *Drumroll Please* is made up of three undergrad students in the Henrico area:
 
  - Nathan Rowan (VCU)
- - Yaqub Mukhtar (VCU)
  - Duncan Fernandez (Reynolds)
 
 ## Our solution path

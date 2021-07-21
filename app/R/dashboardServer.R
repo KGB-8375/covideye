@@ -237,9 +237,9 @@ mapServer <- function(id, local) {
         ) %>%
           clearMarkers() %>%
           addMarkers(
-            lng   = input$long,
+            lng   = input$lng,
             lat   = input$lat,
-            label = "Current Location",
+            label = HTML("<b>Your Location</b>"),
             icon  = redIcon
           )
       })
