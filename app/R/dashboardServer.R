@@ -89,14 +89,54 @@ mapServer <- function(id, local) {
       output$date_ui <- renderUI({
         ns <- session$ns
         
-        dateInput(
-          ns("date"),
-          label  = "Select Date",
-          format = "m/dd/yyyy",
-          max    = local.max,
-          min    = local.min(),
-          value  = local.max
+        splitLayout(
+          cellWidths = c("auto", "auto", "auto"),
+          cellArgs   = list(style = "vertical-align: middle;"),
+          dateInput(
+            ns("date"),
+            label  = "Select Date",
+            format = "m/dd/yyyy",
+            max    = local.max,
+            min    = local.min(),
+            value  = local.max
+          ),
+          actionBttn(
+            ns("prev_date"),
+            label = NULL,
+            style = "simple",
+            color = "danger",
+            icon  = icon("arrow-left"),
+            size  = "sm"
+          ),
+          actionBttn(
+            ns("next_date"),
+            label = NULL,
+            style = "simple",
+            color = "danger",
+            icon  = icon("arrow-right"),
+            size  = "sm"
+          )
         )
+      })
+      
+      # Previous Date
+      observeEvent(input$prev_date, {
+        req(input$date)
+        
+        date <- input$date
+        if(date > local.min()) {
+          updateDateInput(session, "date", value = date - 1)
+        }
+      })
+      
+      # Next Date
+      observeEvent(input$next_date, {
+        req(input$date)
+        
+        date <- input$date
+        if(date < local.max) {
+          updateDateInput(session, "date", value = date + 1)
+        }
       })
       
       # Date selection
