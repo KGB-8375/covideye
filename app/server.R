@@ -13,6 +13,20 @@ library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
 library(htmltools)  # Apply HTML tags for leaflet
 
+# Check cached data integrity
+if(!file.exists("DATA/pop.csv")) {
+    source("getData.R")
+}
+
+if(!file.exists("DATA/temp/covid_local.csv")) {
+    source("update.R")
+}
+
+# Update old data (should be less than 1 day old)
+if(file.info("DATA/temp/covid_local.csv")$mtime < Sys.time() - as.difftime(1, unit = "days")) {
+    source("update.R")
+}
+
 # Read cached data tables
 covid.local <- fread("DATA/temp/covid_local.csv")
 covid.confd <- fread("DATA/temp/covid_confd.csv")
