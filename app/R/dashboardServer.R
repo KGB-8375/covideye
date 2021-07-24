@@ -89,14 +89,54 @@ mapServer <- function(id, local) {
       output$date_ui <- renderUI({
         ns <- session$ns
         
-        dateInput(
-          ns("date"),
-          label  = "Select Date",
-          format = "m/dd/yyyy",
-          max    = local.max,
-          min    = local.min(),
-          value  = local.max
+        splitLayout(
+          cellWidths = c("auto", "auto", "auto"),
+          cellArgs   = list(style = "vertical-align: middle;"),
+          dateInput(
+            ns("date"),
+            label  = "Select Date",
+            format = "m/dd/yyyy",
+            max    = local.max,
+            min    = local.min(),
+            value  = local.max
+          ),
+          actionBttn(
+            ns("prev_date"),
+            label = NULL,
+            style = "simple",
+            color = "danger",
+            icon  = icon("arrow-left"),
+            size  = "sm"
+          ),
+          actionBttn(
+            ns("next_date"),
+            label = NULL,
+            style = "simple",
+            color = "danger",
+            icon  = icon("arrow-right"),
+            size  = "sm"
+          )
         )
+      })
+      
+      # Previous Date
+      observeEvent(input$prev_date, {
+        req(input$date)
+        
+        date <- input$date
+        if(date > local.min()) {
+          updateDateInput(session, "date", value = date - 1)
+        }
+      })
+      
+      # Next Date
+      observeEvent(input$next_date, {
+        req(input$date)
+        
+        date <- input$date
+        if(date < local.max) {
+          updateDateInput(session, "date", value = date + 1)
+        }
       })
       
       # Date selection
@@ -237,9 +277,9 @@ mapServer <- function(id, local) {
         ) %>%
           clearMarkers() %>%
           addMarkers(
-            lng   = input$long,
+            lng   = input$lng,
             lat   = input$lat,
-            label = "Current Location",
+            label = HTML("<b>Your Location</b>"),
             icon  = redIcon
           )
       })
@@ -336,12 +376,11 @@ dailyRatesServer <- function(id, covid.confd) {
           rates_data(),
           hovertemplate = "%{y:,.0f}",
           x             = ~date
-        ) %>% add_trace (
+        ) %>% add_lines (
           # Average line
-          type    = 'scatter',
-          mode    = 'lines',
           line    = list(
-            color = "black"
+            color = "black",
+            shape = "spline"
           ),
           y       = ~avg,
           name    = "7-Day Average"
@@ -544,19 +583,24 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
         
         plot_ly(
           selection(),
-          type  = 'scatter',
-          mode  = 'lines',
           x     = ~date,
-          # County cases
-          y     = ~target.co,
-          name  = input$list,
-          color = I("red"),
           hovertemplate = "%{y:,.0f}"
-        ) %>% add_trace(
+        ) %>% add_lines (
+          # County cases
+          y    = ~target.co,
+          name = input$list,
+          line = list(
+            color = "red",
+            shape = "spline"
+          )
+        ) %>% add_lines (
           # VA average
-          y     = ~target.va,
-          name  = title_va(),
-          color = I("black")
+          y    = ~target.va,
+          name = title_va(),
+          line = list(
+            color = "black",
+            shape = "spline"
+          )
         ) %>% layout (
           # Setup
           title = title_plot(),
