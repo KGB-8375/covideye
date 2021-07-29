@@ -12,6 +12,7 @@ library(zoo)        # Calculating a rolling mean
 library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
 library(htmltools)  # Apply HTML tags for leaflet
+library(thematic)   # Change plot themes
 
 # Check cached data integrity
 if(!file.exists("DATA/pop.csv")) {
@@ -68,9 +69,22 @@ local <- local %>%
 
 rm(covid.local, pop.local)
 
+# Prepare theming
+thematic_shiny()
+
 # Main server functionality for website
 function(input, output, session) {
-    dashboardServer("dashboard", local, covid.confd, pop)
+    dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode))
     byCountyServer("byCounty")
     #demographicsServer("demographics")
+    
+    # Theme
+    observe(
+        session$setCurrentTheme(
+            if (input$dark_mode) 
+                dark
+            else
+                light
+        )
+    )
 }

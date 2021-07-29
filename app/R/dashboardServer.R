@@ -50,7 +50,7 @@ statsServer <- function(id, covid.confd, pop) {
 }
 
 # Choropleth map
-mapServer <- function(id, local) {
+mapServer <- function(id, local, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -80,9 +80,11 @@ mapServer <- function(id, local) {
         bounds <- bbox(local) %>%
           as.vector()
         
-        leaflet() %>%
-          fitBounds(bounds[1], bounds[2], bounds[3], bounds[4]) %>%
-          addProviderTiles(providers$Esri.WorldGrayCanvas)
+        leaflet(
+          options = leafletOptions(
+          )
+        ) %>%
+          fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
       })
       
       # Date selector input
@@ -91,7 +93,6 @@ mapServer <- function(id, local) {
         
         splitLayout(
           cellWidths = c("auto", "auto", "auto"),
-          cellArgs   = list(style = "vertical-align: middle;"),
           dateInput(
             ns("date"),
             label  = "Select Date",
@@ -101,7 +102,7 @@ mapServer <- function(id, local) {
             value  = local.max
           ),
           actionBttn(
-            ns("prev_date"),
+            ns("date_prev"),
             label = NULL,
             style = "simple",
             color = "danger",
@@ -109,18 +110,23 @@ mapServer <- function(id, local) {
             size  = "sm"
           ),
           actionBttn(
-            ns("next_date"),
+            ns("date_next"),
             label = NULL,
             style = "simple",
             color = "danger",
             icon  = icon("arrow-right"),
             size  = "sm"
+          ),
+          tags$style(
+            "#dashboard-map-date_prev, #dashboard-map-date_next {
+              margin-top: 32px;
+            }"
           )
         )
       })
       
       # Previous Date
-      observeEvent(input$prev_date, {
+      observeEvent(input$date_prev, {
         req(input$date)
         
         date <- input$date
@@ -130,7 +136,7 @@ mapServer <- function(id, local) {
       })
       
       # Next Date
-      observeEvent(input$next_date, {
+      observeEvent(input$date_next, {
         req(input$date)
         
         date <- input$date
@@ -324,12 +330,27 @@ mapServer <- function(id, local) {
             )
           )
       })
+      
+      # Background changer
+      observe({
+        ns <- session$ns
+        
+        if(dark_mode()) {
+          leafletProxy(ns("map")) %>%
+            clearTiles() %>%
+            addProviderTiles(providers$CartoDB.DarkMatterNoLabels)
+        } else {
+          leafletProxy(ns("map")) %>%
+            clearTiles() %>%
+            addProviderTiles(providers$CartoDB.PositronNoLabels)
+        }
+      })
     }
   )
 }
 
 # State-wide daily rates
-dailyRatesServer <- function(id, covid.confd) {
+dailyRatesServer <- function(id, covid.confd, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -370,6 +391,22 @@ dailyRatesServer <- function(id, covid.confd) {
         )
       })
       
+      fgcolor <- reactive({
+        if(dark_mode()) {
+          "lightgrey"
+        } else {
+          "black"
+        }
+      })
+      
+      bgcolor <- reactive({
+        if(dark_mode()) {
+          "black"
+        } else {
+          "white"
+        }
+      })
+      
       # Main plot
       output$rates <- renderPlotly({
         plot_ly(
@@ -379,7 +416,7 @@ dailyRatesServer <- function(id, covid.confd) {
         ) %>% add_lines (
           # Average line
           line    = list(
-            color = "black",
+            color = fgcolor(),
             shape = "spline"
           ),
           y       = ~avg,
@@ -421,12 +458,18 @@ dailyRatesServer <- function(id, covid.confd) {
             fixedrange = TRUE
           ),
           hoverlabel = list(
-            bordercolor = "black"
+            bordercolor = fgcolor(),
+            bgcolor     = bgcolor()
           ),
           barmode       = 'group',
           hovermode     = 'x unified',
           hoverdistance = 1,
-          spikedistance = 1000
+          spikedistance = 1000,
+          paper_bgcolor = "transparent",
+          plot_bgcolor  = "transparent",
+          font = list(
+            color = fgcolor()
+          )
         ) %>% config (
           displayModeBar = FALSE,
           displaylogo    = FALSE,
@@ -438,7 +481,7 @@ dailyRatesServer <- function(id, covid.confd) {
 }
 
 # Display county with the highest XYZ
-countyHighestServer <- function(id, covid.local, covid.confd) {
+countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -577,6 +620,22 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
           }
         )
       })
+      
+      fgcolor <- reactive({
+        if(dark_mode()) {
+          "lightgrey"
+        } else {
+          "black"
+        }
+      })
+      
+      bgcolor <- reactive({
+        if(dark_mode()) {
+          "black"
+        } else {
+          "white"
+        }
+      })
 
       output$chart <- renderPlotly({
         req(input$list)
@@ -598,7 +657,7 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
           y    = ~target.va,
           name = title_va(),
           line = list(
-            color = "black",
+            color = fgcolor(),
             shape = "spline"
           )
         ) %>% layout (
@@ -626,11 +685,17 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
             spikemode      = 'across'
           ),
           hoverlabel = list(
-            bordercolor = "black"
+            bordercolor = fgcolor(),
+            bgcolor     = bgcolor()
           ),
           hovermode     = 'x unified',
           hoverdistance = 1,
-          spikedistance = 1000
+          spikedistance = 1000,
+          paper_bgcolor = "transparent",
+          plot_bgcolor  = "transparent",
+          font = list(
+            color = fgcolor()
+          )
         ) %>% config (
           displayModeBar = FALSE,
           displaylogo    = FALSE,
@@ -641,14 +706,14 @@ countyHighestServer <- function(id, covid.local, covid.confd) {
   )
 }
 
-dashboardServer <- function(id, local, covid.confd, pop) {
+dashboardServer <- function(id, local, covid.confd, pop, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
       statsServer("stats", covid.confd, pop)
-      mapServer("map", local)
-      dailyRatesServer("rates", covid.confd)
-      countyHighestServer("highest", local@data, covid.confd)
+      mapServer("map", local, dark_mode)
+      dailyRatesServer("rates", covid.confd, dark_mode)
+      countyHighestServer("highest", local@data, covid.confd, dark_mode)
     }
   )
 } 
