@@ -1,1 +1,2 @@
 setwd("app")
+library("shiny")
