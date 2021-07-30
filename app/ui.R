@@ -8,6 +8,7 @@ library(bslib)
 library(shinyWidgets)
 library(htmlwidgets)
 library(htmltools)
+library(shinyjs)
 
 # Fancier navbarPage
 navbarPageWithInputs <- function(..., inputs) {
@@ -20,47 +21,56 @@ navbarPageWithInputs <- function(..., inputs) {
 }
 
 # Main UI for website
-navbarPageWithInputs(
-    title       = "CovidEye",
-    windowTitle = "CovidEye",
-    theme       = light,
+tagList(
+    useShinyjs(),
+    extendShinyjs(script = "navigate.js", functions = c("updateHistory")),
     
-    # Dashboard
-    tabPanel(
-        title = "Dashboard",
-        dashboardUI("dashboard")
-    ),
-    # By County
-    tabPanel(
-        title = "By County",
-        byCountyUI("byCounty")
-    ),
-    # Demographics
-    tabPanel(
-        title = "Demographics"
-    #    demographicsUI("demographics")
-    ),
-    # About
-    tabPanel(
-        title = "About",
-        includeMarkdown("./about.md")
-    ),
-    # Dark Mode
-    inputs = tagList(
-        switchInput(
-        "dark_mode",
-        size = "small",
-        onLabel = '<i class="fa fa-moon"></i>',
-        offLabel = '<i class="fa fa-sun"></i>',
-        offStatus = "warning",
-        onStatus = "info",
-        handleWidth = "20px"
+    navbarPageWithInputs(
+        title       = "CovidEye",
+        windowTitle = "CovidEye",
+        theme       = light,
+        id          = "navbar",
+        # Dashboard
+        tabPanel(
+            title = "Dashboard",
+            value = "dashboard",
+            dashboardUI("dashboard")
         ),
-        tags$style(".bootstrap-switch-id-dark_mode {position: absolute; right: 20px; top: 12px; }")
-    ),
-    # Disclaimer
-    footer = tagList(
-        hr(),
-        wellPanel(includeText("disclaimer.txt"), style = "font-size:8pt")
+        # By County
+        tabPanel(
+            title = "By County",
+            value = "by-county",
+            byCountyUI("byCounty")
+        ),
+        # Demographics
+        tabPanel(
+            title = "Demographics",
+            value = "demographics"
+            #    demographicsUI("demographics")
+        ),
+        # About
+        tabPanel(
+            title = "About",
+            value = "about",
+            includeMarkdown("./about.md")
+        ),
+        # Dark Mode
+        inputs = tagList(
+            switchInput(
+                "dark_mode",
+                size = "small",
+                onLabel = '<i class="fa fa-moon"></i>',
+                offLabel = '<i class="fa fa-sun"></i>',
+                offStatus = "warning",
+                onStatus = "info",
+                handleWidth = "20px"
+            ),
+            tags$style(".bootstrap-switch-id-dark_mode {position: absolute; right: 20px; top: 12px; }")
+        ),
+        # Disclaimer
+        footer = tagList(
+            hr(),
+            wellPanel(includeText("disclaimer.txt"), style = "font-size:8pt")
+        )
     )
 )

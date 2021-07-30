@@ -13,6 +13,7 @@ library(plotly)     # Graphing interactive plots
 library(BAMMtools)  # Jenks breaks
 library(htmltools)  # Apply HTML tags for leaflet
 library(thematic)   # Change plot themes
+library(shinyjs)    # Extend shiny with JS
 
 # Check cached data integrity
 if(!file.exists("DATA/pop.csv")) {
@@ -87,4 +88,47 @@ function(input, output, session) {
                 light
         )
     )
+    
+    # Navigation
+    autoNavigating <- reactiveVal(0)
+    pageLoading    <- reactiveVal(TRUE)
+    
+    # Navigate to URL requested on page load
+    observeEvent(session$clientData$url_search, {
+        if(!pageLoading()) return()
+        pageLoading(FALSE)
+        
+        if(nchar(session$clientData$url_search) > 1) {
+            autoNavigating(autoNavigating() + 1)
+            restore(session$clientData$url_search)
+        }
+    })
+    
+    # Restore the Shiny app's state
+    restore <- function(qs) {
+        data <- parseQueryString(qs)
+        
+        if(!is.null(data['page'])) {
+            autoNavigating(autoNavigating() + 1)
+            
+            updateTabsetPanel(session, "navbar", data[['page']])
+        }
+    }
+    
+    # Save page state to URL
+    observeEvent(input$navbar, {
+        if(autoNavigating() > 0) {
+            autoNavigating(autoNavigating() - 1)
+            return()
+        }
+        
+        pageLoading(FALSE)
+        
+        js$updateHistory(page = input$navbar)
+    })
+    
+    # Restore state on next/prev button presses
+    observeEvent(input$navigatedTo, {
+        restore(input$navigatedTo)
+    })
 }
