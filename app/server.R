@@ -118,13 +118,7 @@ function(input, output, session) {
         if(!is.null(data['dark'])) {
             nav <- TRUE
             
-            if(data[['dark']] == 'false') {
-                data[['dark']] <- FALSE
-            } else {
-                data[['dark']] <- TRUE
-            }
-            
-            updateSwitchInput(session, "dark_mode", data[['dark']])
+            updateSwitchInput(session, "dark_mode", as.logical(data[['dark']]))
         }
         
         if(nav) {
