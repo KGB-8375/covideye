@@ -113,10 +113,14 @@ function(input, output, session) {
             
             updateTabsetPanel(session, "navbar", data[['page']])
         }
+        
+        if(!is.null(data['dark'])) {
+            updateSwitchInput(session, "dark_mode", data[['dark']])
+        }
     }
     
     # Save page state to URL
-    observeEvent(input$navbar, {
+    observeEvent(list(input$navbar, input$dark_mode), {
         if(autoNavigating() > 0) {
             autoNavigating(autoNavigating() - 1)
             return()
@@ -124,7 +128,7 @@ function(input, output, session) {
         
         pageLoading(FALSE)
         
-        js$updateHistory(page = input$navbar)
+        js$updateHistory(page = input$navbar, dark = input$dark_mode)
     })
     
     # Restore state on next/prev button presses
