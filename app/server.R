@@ -107,15 +107,28 @@ function(input, output, session) {
     # Restore the Shiny app's state
     restore <- function(qs) {
         data <- parseQueryString(qs)
+        nav <- FALSE
         
         if(!is.null(data['page'])) {
-            autoNavigating(autoNavigating() + 1)
+            nav <- TRUE
             
             updateTabsetPanel(session, "navbar", data[['page']])
         }
         
         if(!is.null(data['dark'])) {
+            nav <- TRUE
+            
+            if(data[['dark']] == 'false') {
+                data[['dark']] <- FALSE
+            } else {
+                data[['dark']] <- TRUE
+            }
+            
             updateSwitchInput(session, "dark_mode", data[['dark']])
+        }
+        
+        if(nav) {
+            autoNavigating(autoNavigating() + 1)
         }
     }
     
