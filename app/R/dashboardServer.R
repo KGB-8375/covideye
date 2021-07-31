@@ -14,8 +14,9 @@ statsServer <- function(id, covid.confd, pop) {
       fancy_num <- function(x) {
         format(
           x,
-          big.mark = ",",
-          scientific = FALSE
+          big.mark   = ",",
+          scientific = FALSE,
+          trim       = TRUE
         )
       }
       
@@ -70,8 +71,9 @@ mapServer <- function(id, local, dark_mode) {
         x %>%
           round() %>%
           format(
-            big.mark = ",",
-            scientific = FALSE
+            big.mark   = ",",
+            scientific = FALSE,
+            trim       = TRUE
           )
       }
       
@@ -80,10 +82,7 @@ mapServer <- function(id, local, dark_mode) {
         bounds <- bbox(local) %>%
           as.vector()
         
-        leaflet(
-          options = leafletOptions(
-          )
-        ) %>%
+        leaflet() %>%
           fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
       })
       

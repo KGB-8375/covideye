@@ -121,7 +121,7 @@ countyHighestUI <- function(id) {
           "Total"      = "total",
           "Daily Rate" = "rate"
         ),
-        selected = "total"
+        selected = "rate"
       ),
       htmlOutput(ns("list"))
     )
