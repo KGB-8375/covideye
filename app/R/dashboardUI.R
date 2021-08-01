@@ -72,18 +72,14 @@ dailyRatesUI <- function(id) {
     plotlyOutput(ns("rates")),
     fluidRow(
       align = "center",
-      column(
-        width = 4
-      ),
+      column(width = 4),
       column(
         width = 4,
         inputPanel(
           htmlOutput(ns("date_ui"))
         )
       ),
-      column(
-        width = 4
-      )
+      column(width = 4)
     )
   )
 }

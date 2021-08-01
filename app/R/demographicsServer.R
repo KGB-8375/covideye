@@ -1,4 +1,5 @@
 # DEMOGRAPHICS SERVER MODULES 
+
 inputServer <- function(id, covid.sex) {
   moduleServer(
     id,
@@ -6,10 +7,10 @@ inputServer <- function(id, covid.sex) {
       
       output$date_ui <- renderUI({
         ns <- session$ns
-        dateInput(ns("user_date"), "Select date:",
-                  min = min(covid.sex$date),
-                  max = max(covid.sex$date),
-                  value = max(covid.sex$date),
+        dateInput(ns("user_date"), "Select Date",
+                  min    = min(covid.sex$date),
+                  max    = max(covid.sex$date),
+                  value  = max(covid.sex$date),
                   format = "m/dd/yy"
         )
       })
@@ -17,7 +18,7 @@ inputServer <- function(id, covid.sex) {
       return(list(
         date = reactive({input$user_date}),
         mode = reactive({input$mode}),
-        adj = reactive({input$pop_adj})
+        adj  = reactive({input$pop_adj})
       ))
       
       
@@ -37,17 +38,18 @@ ageServer <- function(id, covid.age, inputs, pop) {
       covid.age <- covid.age %>%
         inner_join(pop.age, by = "ages") %>%
         mutate(
-          cases.adj = cases * 100000 / pop,
+          cases.adj  = cases * 100000 / pop,
           hospts.adj = hospts * 100000 / pop,
           deaths.adj = deaths * 100000 /pop
         )
+      
       rm(pop.age)
       
       # Variable Creation
       date_sel <- reactive({
         req(inputs$date())
         
-        pop.age %>% 
+        covid.age %>% 
           filter(date == inputs$date())
       })
       
@@ -185,7 +187,7 @@ raceServer <- function(id) {
 }
 
 
-demographicsServer <- function(id, covid.sex, pop) {
+demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop) {
   moduleServer (
     id,
     function(input, output, session) {
@@ -458,80 +460,6 @@ demographicsServer <- function(id, covid.sex, pop) {
 #     id,
 #     function(input, output, session) {
 #       # Age
-      age_title <- reactive({
-        if(input$pop_adj) {
-          switch(input$mode,
-                 cases = "Cases by Age\n(Population Adjusted)",
-                 hospts = paste0("Hospitalizations by Age\n",
-                                 "(Population Adjusted)"),
-                 deaths = "Deaths by Age\n(Population Adjusted)")
-        }
-        else {
-          switch(input$mode,
-                 cases = "Cases by Age\n(Total)",
-                 hospts = paste0("Hospitalizations by Age\n",
-                                 "(Total)"),
-                 deaths = "Deaths by Age\n(Total)")
-        }
-      })
-
-      age_y_label <- reactive({
-        if(input$pop_adj) {
-          switch(input$mode,
-                 cases = "Cases per 100k",
-                 hospts = "Hospitalizations per 100k",
-                 deaths = "Deaths per 100k")
-        }
-        else {
-          switch(input$mode,
-                 cases = "Cases",
-                 hospts = "Hospitalizations",
-                 deaths = "Deaths")
-        }
-      })
-
-      age_color <- reactive({
-        switch(input$mode,
-               cases = list(color = '#d47d3d',
-                            line = list(color = '#c23719',
-                                        width = 1.5)),
-               hospts = list(color = '#a7a3cd',
-                             line = list(color = '#7760ab',
-                                         width = 1.5)),
-               deaths = list(color = '#808080',
-                             line = list(color = '#3a3a3a',
-                                         width = 1.5))
-               )
-      })
-
-      age_tooltips <- reactive({
-        if(input$pop_adj) {
-          paste0(
-            "Years of Age: ", age_date_sel()$age_group, "\n",
-            "Date: ", format(
-              age_date_sel()$date, "%D"), "\n\n",
-            "Cases per 100k: ", floor(
-              age_date_sel()$cases.adj), "\n",
-            "Hospitalizations per 100k: ", floor(
-              age_date_sel()$hospts.adj), "\n",
-            "Deaths per 100k: ", floor(
-              age_date_sel()$deaths.adj), "\n"
-          )
-        }
-        else {
-          paste0(
-          "Years of Age: ", age_date_sel()$age_group, "\n",
-          "Date: ", format(
-            age_date_sel()$date, "%D"), "\n\n",
-          "Total Cases: ", floor(
-            age_date_sel()$cases), "\n",
-          "Total Hospitalizations: ", floor(
-            age_date_sel()$hospts), "\n",
-          "Total Deaths: ", floor(
-            age_date_sel()$deaths), "\n"
-          )
-        }
-      })
 #       # Race
 #       race_title <- reactive({
 #         if(input$pop_adj) {
@@ -637,26 +565,6 @@ demographicsServer <- function(id, covid.sex, pop) {
 #     id,
 #     function(input, output, session) {
 #       # Age
-      output$age <- renderPlotly({
-        plot_ly(
-          x = ~age_date_sel()$age,
-          y = ~age_mode(),
-          type = "bar",
-          marker = ~age_color(),
-          hoverinfo = ~'text',
-          text = ~age_tooltips()
-        ) %>% layout(
-          title = ~age_title(),
-          xaxis = list(title = "Age Groups",
-                       showgrid = FALSE, fixedrange = TRUE),
-          yaxis = list(title = ~age_y_label(),
-                       showgrid = FALSE, fixedrange = TRUE)
-        ) %>% config(
-          displayModeBar = FALSE,
-          displaylogo = FALSE,
-          showTips = FALSE
-        )
-      })
 #       # Race
 #       output$race <- renderPlotly({
 #         plot_ly(

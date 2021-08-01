@@ -40,10 +40,7 @@ sexUI <- function(id) {
   
   tagList(
     h2("Sex"),
-    plotlyOutput(
-      ns("sex"),
-      width = '50%'
-    )
+    plotlyOutput(ns("sex"))
   )
 }
 
@@ -65,32 +62,27 @@ demographicsUI <- function(id) {
     h1("Who COVID-19 is affecting the most"),
     hr(),
     fluidRow(
+      align = 'center',
       column(
-        width = 6,
-        #Input
-        inputUI(ns("input"))
+        width = 4,
+        ageUI(ns("age"))
       ),
       column(
-        width = 6,
-        align = 'center',
-        #Age
-        ageUI(ns("age"))
-      )
-    ),
-    hr(),
-    fluidRow(
-      column(
-        width = 6,
-        align = 'center',
-        #Sex
+        width = 4,
         sexUI(ns("sex"))
       ),
       column(
-        width = 6,
-        align = 'center',
-        #Race
+        width = 4,
         raceUI(ns("race"))
       )
+    ),
+    fluidRow(
+      column(width = 4),
+      column(
+        width = 4,
+        inputUI(ns("input"))
+      ),
+      column(width = 4)
     )
   )
 }
