@@ -1,64 +1,66 @@
-library(shiny)
-library(leaflet)
-library(plotly)
-library(shinythemes)
+## Main client-side app
 
-# Define UI for application that draws a histogram
-shinyUI(navbarPage( "CovidEye", windowTitle = "CovidEye",
-                    theme = shinytheme("cosmo"),
-    ## DASHBOARD PAGE ##########################################################
-    tabPanel("Dashboard",
-        tags$h1("The Commonwealth of Virginia"),
-        htmlOutput("db_stats"),
-        fluidRow(
-            column(9, leafletOutput("db_map")),
-            column(3, wellPanel(
-                htmlOutput("db_date_ui"),
-                radioButtons("db_mode", "Show", selected = "cases",
-                             choices = list("Population" = "pop",
-                                            "Total Cases" = "cases",
-                                            "Hospitalizations" = "hosp",
-                                            "Deaths" = "deaths")),
-                checkboxInput("db_pop_adj", "Adjust for Population",
-                              value = TRUE))
-            )
+# Fancier navbarPage
+navbarPageWithInputs <- function(..., inputs) {
+    navbar <- navbarPage(...)
+    form <- tags$form(class = "navbar-form", inputs)
+    navbar[[4]][[1]]$children[[1]] <- tagAppendChild(
+        navbar[[4]][[1]]$children[[1]], form
+    )
+    navbar
+}
+
+# Main UI for website
+tagList(
+    useShinyjs(),
+    extendShinyjs(script = "navigate.js", functions = c("updateHistory")),
+    
+    navbarPageWithInputs(
+        title       = "CovidEye",
+        windowTitle = "CovidEye",
+        theme       = light,
+        id          = "navbar",
+        # Dashboard
+        tabPanel(
+            title = "Dashboard",
+            value = "dashboard",
+            dashboardUI("dashboard")
         ),
-        tags$h2("Daily Rates"),
-        htmlOutput("db_date_rng_ui"),
-        plotlyOutput("db_rates"),
-        tags$h2("County with Most Cases (Population Adjusted)"),
-        plotlyOutput("db_highest_cases"),
-        tags$h2("County with Highest Daily Rate (Population Adjusted)"),
-        plotlyOutput("db_highest_rates")
-    ),
-    ## BY COUNTRY PAGE #########################################################
-    tabPanel("By County",
-        "This page is intentionally blank."),
-    ## DEMOGRAPHICS PAGE #######################################################
-    tabPanel("Demographics",
-        tags$h1("Who COVID-19 is affecting the most"),
-        fluidRow(
-            column(6, wellPanel(htmlOutput("demo_date_ui"),
-                      radioButtons("demo_mode","Show", selected = "cases",
-                                   choices = list("Cases" = "cases",
-                                                  "Hospitilizations" = "hosp",
-                                                  "Deaths" = "deaths")),
-                      checkboxInput("demo_pop_adj", "Adjust for Population",
-                                    value = TRUE)),),
-            column(6, tags$h2("Age Groups", align = 'center'),
-                      plotlyOutput("demo_age"))
+        # By County
+        tabPanel(
+            title = "By County",
+            value = "by-county",
+            byCountyUI("byCounty")
         ),
-        fluidRow(
-            column(6, align = 'center', tags$h2("Sex"),
-                      plotlyOutput("demo_sex", width = '50%')),
-            column(6, tags$h2("Race", align = 'center'),
-                      plotlyOutput("demo_race"))
+        # Demographics
+        tabPanel(
+            title = "Demographics",
+            value = "demographics",
+            demographicsUI("demographics")
+        ),
+        # About
+        tabPanel(
+            title = "About",
+            value = "about",
+            includeMarkdown("about.md")
+        ),
+        # Dark Mode
+        inputs = tagList(
+            switchInput(
+                "dark_mode",
+                size = "small",
+                onLabel = '<i class="fa fa-moon"></i>',
+                offLabel = '<i class="fa fa-sun"></i>',
+                offStatus = "warning",
+                onStatus = "info",
+                handleWidth = "20px"
+            ),
+            tags$style(".bootstrap-switch-id-dark_mode {position: absolute; right: 20px; top: 12px; }")
+        ),
+        # Disclaimer
+        footer = tagList(
+            hr(),
+            wellPanel(includeText("disclaimer.txt"), style = "font-size:8pt")
         )
-
-    ),
-    ## ABOUT PAGE ##############################################################
-    tabPanel("About",
-        includeMarkdown("./about.md")),
-    tabPanel("Disclaimer",
-        includeMarkdown("./disclaimer.md"))
-))
+    )
+)
