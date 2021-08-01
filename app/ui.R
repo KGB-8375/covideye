@@ -52,7 +52,7 @@ tagList(
         tabPanel(
             title = "About",
             value = "about",
-            includeMarkdown("./about.md")
+            includeMarkdown("about.md")
         ),
         # Dark Mode
         inputs = tagList(
