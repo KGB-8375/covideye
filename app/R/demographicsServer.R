@@ -160,6 +160,7 @@ ageServer <- function(id, covid.age, inputs, pop) {
           displaylogo = FALSE,
           showTips = FALSE
         )
+        #
       })
     }
   )
