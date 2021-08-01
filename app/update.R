@@ -1,9 +1,10 @@
 ## Retrieve all temporary data
 
 # Libraries
-library(RSocrata)   # Reading data from Socrata sites (VDH)
-library(dplyr)      # Arranging & modifying data
-library(data.table) # Write data frame to .csv
+library(RSocrata)
+library(dplyr)
+library(data.table)
+library(zoo)
 
 # Create Directories
 dir.create("DATA/temp", recursive = TRUE)

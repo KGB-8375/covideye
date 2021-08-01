@@ -1,9 +1,9 @@
 ## Retrieve all static data
 
 # Libraries
-library(RSocrata)   # Reading data from Socrata sites (VDH)
-library(dplyr)      # Arranging & modifying data
-library(data.table) # Write data frame to .csv
+library(RSocrata)
+library(dplyr)
+library(data.table)
 
 # Create Directories
 dir.create("DATA")
