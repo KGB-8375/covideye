@@ -45,8 +45,8 @@ tagList(
         # Demographics
         tabPanel(
             title = "Demographics",
-            value = "demographics"
-            #    demographicsUI("demographics")
+            value = "demographics",
+            demographicsUI("demographics")
         ),
         # About
         tabPanel(
