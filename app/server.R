@@ -77,7 +77,7 @@ thematic_shiny()
 function(input, output, session) {
     dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode))
     byCountyServer("byCounty")
-    demographicsServer("demographics", covid.age, covid.race, covid.sex, pop)
+    demographicsServer("demographics", covid.age, covid.race, covid.sex, pop, reactive(input$dark_mode))
     
     # Theme
     observe(
