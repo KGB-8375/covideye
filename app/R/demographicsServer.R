@@ -4,7 +4,6 @@ inputServer <- function(id, covid.sex) {
   moduleServer(
     id,
     function(input, output, session) {
-      
       output$date_ui <- renderUI({
         ns <- session$ns
         dateInput(ns("user_date"), "Select Date",
@@ -15,13 +14,13 @@ inputServer <- function(id, covid.sex) {
         )
       })
       
-      return(list(
-        date = reactive({input$user_date}),
-        mode = reactive({input$mode}),
-        adj  = reactive({input$pop_adj})
-      ))
-      
-      
+      return(
+        list(
+          date = reactive({input$user_date}),
+          mode = reactive({input$mode}),
+          adj  = reactive({input$pop_adj})
+        )
+      )
     }
   )
 }
@@ -49,9 +48,9 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
       covid.age <- covid.age %>%
         inner_join(pop.age, by = "ages") %>%
         mutate(
-          cases.adj  = cases * 100000 / pop,
+          cases.adj  = cases * 100000  / pop,
           hospts.adj = hospts * 100000 / pop,
-          deaths.adj = deaths * 100000 /pop
+          deaths.adj = deaths * 100000 / pop
         )
       
       rm(pop.age)
@@ -80,47 +79,63 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
       # Age Plot Customization
       age_title <- reactive({
         if(inputs$adj()) {
-          switch(inputs$mode(),
-                 cases = "Cases by Age\n(Population Adjusted)",
-                 hospts = paste0("Hospitalizations by Age\n",
-                                 "(Population Adjusted)"),
-                 deaths = "Deaths by Age\n(Population Adjusted)")
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Age\n(Population Adjusted)",
+            hospts = "Hospitalizations by Age\n(Population Adjusted)",
+            deaths = "Deaths by Age\n(Population Adjusted)"
+          )
         }
         else {
-          switch(inputs$mode(),
-                 cases = "Cases by Age\n(Total)",
-                 hospts = paste0("Hospitalizations by Age\n",
-                                 "(Total)"),
-                 deaths = "Deaths by Age\n(Total)")
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Age\n(Total)",
+            hospts = "Hospitalizations by Age\n(Total)",
+            deaths = "Deaths by Age\n(Total)"
+          )
         }
       })
       
       age_y_label <- reactive({
         if(inputs$adj()) {
-          switch(inputs$mode(),
-                 cases = "Cases per 100k",
-                 hospts = "Hospitalizations per 100k",
-                 deaths = "Deaths per 100k")
+          switch(
+            inputs$mode(),
+            cases  = "Cases per 100k",
+            hospts = "Hospitalizations per 100k",
+            deaths = "Deaths per 100k"
+          )
         }
         else {
-          switch(inputs$mode(),
-                 cases = "Cases",
-                 hospts = "Hospitalizations",
-                 deaths = "Deaths")
+          switch(
+            inputs$mode(),
+            cases  = "Cases",
+            hospts = "Hospitalizations",
+            deaths = "Deaths"
+          )
         }
       })
       
       age_color <- reactive({
-        switch(inputs$mode(),
-               cases = list(color = '#d47d3d',
-                            line = list(color = '#c23719',
-                                        width = 1.5)),
-               hospts = list(color = '#a7a3cd',
-                             line = list(color = '#7760ab',
-                                         width = 1.5)),
-               deaths = list(color = '#808080',
-                             line = list(color = '#3a3a3a',
-                                         width = 1.5))
+        switch(
+          inputs$mode(),
+          cases = list(
+            color = '#d47d3d',
+            line  = list(
+              color = '#c23719',
+              width = 1.5)
+          ),
+          hospts = list(
+            color = '#a7a3cd',
+            line  = list(
+              color = '#7760ab',
+              width = 1.5)
+          ),
+          deaths = list(
+            color = '#808080',
+            line  = list(
+              color = '#3a3a3a',
+              width = 1.5)
+          )
         )
       })
       
@@ -128,27 +143,19 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           paste0(
             "Years of Age: ", date_sel()$ages, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Cases per 100k: ", fancy_num(
-              date_sel()$cases.adj), "\n",
-            "Hospitalizations per 100k: ", fancy_num(
-              date_sel()$hospts.adj), "\n",
-            "Deaths per 100k: ", fancy_num(
-              date_sel()$deaths.adj), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Cases per 100k: ", fancy_num(date_sel()$cases.adj), "\n",
+            "Hospitalizations per 100k: ", fancy_num(date_sel()$hospts.adj), "\n",
+            "Deaths per 100k: ", fancy_num(date_sel()$deaths.adj), "\n"
           )
         }
         else {
           paste0(
             "Years of Age: ", date_sel()$ages, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Total Cases: ", fancy_num(
-              date_sel()$cases), "\n",
-            "Total Hospitalizations: ", fancy_num(
-              date_sel()$hospts), "\n",
-            "Total Deaths: ", fancy_num(
-              date_sel()$deaths), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Total Cases: ", fancy_num(date_sel()$cases), "\n",
+            "Total Hospitalizations: ", fancy_num(date_sel()$hospts), "\n",
+            "Total Deaths: ", fancy_num(date_sel()$deaths), "\n"
           )
         }
       })
@@ -172,18 +179,24 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
       # Age Plotly
       output$age <- renderPlotly({
         plot_ly(
-          x = ~date_sel()$ages,
-          y = ~target(),
-          type = "bar",
-          marker = ~age_color(),
+          x         = ~date_sel()$ages,
+          y         = ~target(),
+          type      = "bar",
+          marker    = ~age_color(),
           hoverinfo = ~'text',
-          text = ~age_tooltips()
+          text      = ~age_tooltips()
         ) %>% layout(
           title = ~age_title(),
-          xaxis = list(title = "Age Groups",
-                       showgrid = FALSE, fixedrange = TRUE),
-          yaxis = list(title = ~age_y_label(),
-                       showgrid = FALSE, fixedrange = TRUE),
+          xaxis = list(
+            title      = "Age Groups",
+            showgrid   = FALSE,
+            fixedrange = TRUE
+          ),
+          yaxis = list(
+            title      = ~age_y_label(),
+            showgrid   = FALSE,
+            fixedrange = TRUE
+          ),
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
           font = list(
@@ -195,8 +208,8 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
           )
         ) %>% config(
           displayModeBar = FALSE,
-          displaylogo = FALSE,
-          showTips = FALSE
+          displaylogo    = FALSE,
+          showTips       = FALSE
         )
       })
     }
@@ -226,9 +239,9 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
       covid.sex <- covid.sex %>%
         inner_join(pop.sex, by = "sex") %>%
         mutate(
-          cases.adj  = cases * 100000 / pop,
+          cases.adj  = cases  * 100000 / pop,
           hospts.adj = hospts * 100000 / pop,
-          deaths.adj = deaths * 100000 /pop
+          deaths.adj = deaths * 100000 / pop
         )
       
       rm(pop.sex)
@@ -257,35 +270,37 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
       # Sex Plot Customization
       sex_title <- reactive({
         if(inputs$adj()) {
-          switch(inputs$mode(),
-                 cases = "Cases by Sex\n(Population Adjusted)",
-                 hospts = paste0("Hospitalizations by Sex\n",
-                                 "(Population Adjusted)"),
-                 deaths = "Deaths by Sex\n(Population Adjusted)"
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Sex\n(Population Adjusted)",
+            hospts = "Hospitalizations by Sex\n(Population Adjusted)",
+            deaths = "Deaths by Sex\n(Population Adjusted)"
           )
         }
         else {
-          switch(inputs$mode(),
-                 cases = "Cases by Sex\n(Total)",
-                 hospts = paste0("Hospitalizations by Sex\n",
-                                 "(Total)"),
-                 deaths = "Deaths by Sex\n(Total)"
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Sex\n(Total)",
+            hospts = "Hospitalizations by Sex\n(Total)",
+            deaths = "Deaths by Sex\n(Total)"
           )
         }
       })
       
       sex_y_label <- reactive({
         if(inputs$adj()) {
-          switch(inputs$mode(),
-                 cases = "Cases per 100k",
-                 hospts = "Hospitalizations per 100k",
-                 deaths = "Deaths per 100k")
+          switch(
+            inputs$mode(),
+            cases  = "Cases per 100k",
+            hospts = "Hospitalizations per 100k",
+            deaths = "Deaths per 100k")
         }
         else {
-          switch(inputs$mode(),
-                 cases = "Cases",
-                 hospts = "Hospitalizations",
-                 deaths = "Deaths")
+          switch(
+            inputs$mode(),
+            cases = "Cases",
+            hospts = "Hospitalizations",
+            deaths = "Deaths")
         }
       })
       
@@ -293,27 +308,19 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           paste0(
             "Sex :", date_sel()$sex, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Cases per 100k: ", fancy_num(
-              date_sel()$cases.adj), "\n",
-            "Hospitalizations per 100k: ", fancy_num(
-              date_sel()$hospts.adj), "\n",
-            "Deaths per 100k: ", fancy_num(
-              date_sel()$deaths.adj), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Cases per 100k: ", fancy_num(date_sel()$cases.adj), "\n",
+            "Hospitalizations per 100k: ", fancy_num(date_sel()$hospts.adj), "\n",
+            "Deaths per 100k: ", fancy_num(date_sel()$deaths.adj), "\n"
           )
         }
         else {
           paste0(
             "Sex :", date_sel()$sex, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Total Cases: ", fancy_num(
-              date_sel()$cases), "\n",
-            "Total Hospitalizations: ", fancy_num(
-              date_sel()$hospts), "\n",
-            "Total Deaths: ", fancy_num(
-              date_sel()$deaths), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Total Cases: ", fancy_num(date_sel()$cases), "\n",
+            "Total Hospitalizations: ", fancy_num(date_sel()$hospts), "\n",
+            "Total Deaths: ", fancy_num(date_sel()$deaths), "\n"
           )
         }
       })
@@ -339,7 +346,6 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         plot_ly(
           x = ~date_sel()$sex,
           y = ~target(),
-          # ^ was "date_sel()"
           type = "bar",
           marker = list(
             color = c(
@@ -347,20 +353,29 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
               'rgb(6, 98, 204)',
               'rgb(107, 107, 107)'
             ),
-            line = list(color = c(
-              'rgb(168, 50, 146)',
-              'rgb(18, 69, 128)',
-              'rgb(54, 54, 54)'
-            ),
-            width = 1)
+            line = list(
+              color = c(
+                'rgb(168, 50, 146)',
+                'rgb(18, 69, 128)',
+                'rgb(54, 54, 54)'
+              ),
+              width = 1
+            )
           ),
           hoverinfo = 'text',
-          text = ~sex_tooltips()
+          text      = ~sex_tooltips()
         ) %>% layout(
           title = ~sex_title(),
-          yaxis = list(title = "Gender", showgrid = FALSE, fixedrange = TRUE),
-          xaxis = list(title = ~sex_y_label(),
-                       showgrid = FALSE, fixedrange = TRUE),
+          yaxis = list(
+            title      = "Gender",
+            showgrid   = FALSE,
+            fixedrange = TRUE
+          ),
+          xaxis = list(
+            title      = ~sex_y_label(),
+            showgrid   = FALSE,
+            fixedrange = TRUE
+          ),
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
           font = list(
@@ -372,20 +387,18 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
           )
         ) %>% config(
           displayModeBar = FALSE,
-          displaylogo = FALSE,
-          showTips = FALSE
+          displaylogo    = FALSE,
+          showTips       = FALSE
         )
       })
     }
   )
 }
-    
-    
+
 raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
-      # Fancy Num Setup
       fancy_num <- function(x) {
         x %>%
           round() %>%
@@ -404,9 +417,9 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
       covid.race <- covid.race %>%
         inner_join(pop.race, by = "race") %>%
         mutate(
-          cases.adj  = cases * 100000 / pop,
+          cases.adj  = cases  * 100000 / pop,
           hospts.adj = hospts * 100000 / pop,
-          deaths.adj = deaths * 100000 /pop
+          deaths.adj = deaths * 100000 / pop
         )
       
       rm(pop.race)
@@ -435,18 +448,20 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
       # Race Plot Customization
       race_title <- reactive({
         if(inputs$adj()) {
-          switch(inputs$mode(),
-                 cases = "Cases by Minority<br />(Population Adjusted)<br />",
-                 hospts = paste0("Hospitalizations by Minority<br />",
-                                 "(Population Adjusted)<br />"),
-                 deaths = "Deaths by Minority<br />(Population Adjusted)<br />")
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Minority\n(Population Adjusted)\n",
+            hospts = "Hospitalizations by Minority\n(Population Adjusted)\n",
+            deaths = "Deaths by Minority\n(Population Adjusted)\n"
+          )
         }
         else {
-          switch(inputs$mode(),
-                 cases = "Cases by Minority<br />(Total)<br />",
-                 hospts = paste0("Hospitalizations by Minority<br />",
-                                 "(Total)<br />"),
-                 deaths = "Deaths by Minority<br />(Total)<br />")
+          switch(
+            inputs$mode(),
+            cases  = "Cases by Minority\n(Total)\n",
+            hospts = "Hospitalizations by Minority\n(Total)\n",
+            deaths = "Deaths by Minority\n(Total)\n"
+          )
         }
       })
       
@@ -454,27 +469,19 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           paste0(
             "Race: ", date_sel()$race, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Cases per 100k: ", fancy_num(
-              date_sel()$cases.adj), "\n",
-            "Hospitalizations per 100k: ", fancy_num(
-              date_sel()$hospts.adj), "\n",
-            "Deaths per 100k: ", fancy_num(
-              date_sel()$deaths.adj), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Cases per 100k: ", fancy_num(date_sel()$cases.adj), "\n",
+            "Hospitalizations per 100k: ", fancy_num(date_sel()$hospts.adj), "\n",
+            "Deaths per 100k: ", fancy_num(date_sel()$deaths.adj), "\n"
           )
         }
         else {
           paste0(
             "Race: ", date_sel()$race, "\n",
-            "Date: ", format(
-              date_sel()$date, "%D"), "\n\n",
-            "Total Cases: ", fancy_num(
-              date_sel()$cases), "\n",
-            "Total Hospitalizations: ", fancy_num(
-              date_sel()$hospts), "\n",
-            "Total Deaths: ", fancy_num(
-              date_sel()$deaths), "\n"
+            "Date: ", format(date_sel()$date, "%D"), "\n\n",
+            "Total Cases: ", fancy_num(date_sel()$cases), "\n",
+            "Total Hospitalizations: ", fancy_num(date_sel()$hospts), "\n",
+            "Total Deaths: ", fancy_num(date_sel()$deaths), "\n"
           )
         }
       })
@@ -501,10 +508,9 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
           covid.race,
           labels = ~date_sel()$race,
           values = ~target(),
-          # ^ was "date_sel()"
-          type = "pie",
+          type     = "pie",
           textinfo = 'percent',
-          marker = list(
+          marker   = list(
             colors = c(
               'rgb(102,194,165)',
               'rgb(252,141,98)',
@@ -515,18 +521,23 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
               'rgb(179,179,179)',
               'rgb(229,196,148)'
             ),
-            line = list(color = 'rgb(255, 255, 255)', width = 1)
+            line = list(
+              color = 'rgb(255, 255, 255)', 
+              width = 1
+            )
           ),
-          sort = T,
-          hoverinfo = 'text',
+          sort         = T,
+          hoverinfo    = 'text',
           textposition = 'inside',
-          text = ~race_tooltips(),
+          text         = ~race_tooltips(),
           showlegend = T
         ) %>% layout(
           title = ~race_title(),
-          legend = list(x = 0,
-                        y = -100,
-                        orientation = 'h'),
+          legend = list(
+            x           = 0,
+            y           = -100,
+            orientation = 'h'
+          ),
           margin = list(t = 75),
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
@@ -539,14 +550,13 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
           )
         ) %>% config(
           displayModeBar = FALSE,
-          displaylogo = FALSE,
-          showTips = FALSE
+          displaylogo    = FALSE,
+          showTips       = FALSE
         )
       })
     }
   )
 }
-
 
 demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop, dark_mode) {
   moduleServer (

@@ -28,30 +28,21 @@ inputUI <- function(id) {
 ageUI <- function(id) {
   ns <- NS(id)
   
-  tagList(
-    h2("Age Groups"),
-    plotlyOutput(ns("age"))
-  )
+  plotlyOutput(ns("age"))
 }
 
 # Sex
 sexUI <- function(id) {
   ns <- NS(id)
   
-  tagList(
-    h2("Sex"),
-    plotlyOutput(ns("sex"))
-  )
+  plotlyOutput(ns("sex"))
 }
 
 # Race
 raceUI <- function(id) {
   ns <- NS(id)
   
-  tagList(
-    h2("Race"),
-    plotlyOutput(ns("race"))
-  )
+  plotlyOutput(ns("race"))
 }
 
 # MAIN UI
