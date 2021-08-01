@@ -1,20 +1,5 @@
 ## Main server-side app
 
-# Libraries
-library(shiny)      # Building interactive websites
-library(data.table) # Quickly read from .csv files
-library(rgdal)      # Reading spatial data files
-library(sp)         # Working with spatial data
-library(leaflet)    # Graphing interactive maps
-library(dplyr)      # Arranging & modifying data
-library(spdplyr)    # Use dplyr verbs on spatial data
-library(zoo)        # Calculating a rolling mean
-library(plotly)     # Graphing interactive plots
-library(BAMMtools)  # Jenks breaks
-library(htmltools)  # Apply HTML tags for leaflet
-library(thematic)   # Change plot themes
-library(shinyjs)    # Extend shiny with JS
-
 # Check cached data integrity
 if(!file.exists("DATA/pop.csv")) {
     source("getData.R")

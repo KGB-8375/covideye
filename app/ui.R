@@ -1,15 +1,5 @@
 ## Main client-side app
 
-# Libraries
-library(shiny)
-library(leaflet)
-library(plotly)
-library(bslib)
-library(shinyWidgets)
-library(htmlwidgets)
-library(htmltools)
-library(shinyjs)
-
 # Fancier navbarPage
 navbarPageWithInputs <- function(..., inputs) {
     navbar <- navbarPage(...)
