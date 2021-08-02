@@ -333,6 +333,8 @@ mapServer <- function(id, local, dark_mode) {
       # Background changer
       observe({
         ns <- session$ns
+        # make sure this doesn't happen too early
+        req(input$date)
         
         if(dark_mode()) {
           leafletProxy(ns("map")) %>%
