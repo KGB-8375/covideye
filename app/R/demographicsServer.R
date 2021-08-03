@@ -211,7 +211,12 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
           displaylogo    = FALSE,
           showTips       = FALSE
         )
-      })
+      }) %>% bindCache(
+        dark_mode(),
+        inputs$date(),
+        inputs$mode(),
+        inputs$adj()
+      )
     }
   )
 }
@@ -390,7 +395,12 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
           displaylogo    = FALSE,
           showTips       = FALSE
         )
-      })
+      }) %>% bindCache(
+        dark_mode(),
+        inputs$date(),
+        inputs$mode(),
+        inputs$adj()
+      )
     }
   )
 }
@@ -553,7 +563,12 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
           displaylogo    = FALSE,
           showTips       = FALSE
         )
-      })
+      }) %>% bindCache(
+        dark_mode(),
+        inputs$date(),
+        inputs$mode(),
+        inputs$adj()
+      )
     }
   )
 }

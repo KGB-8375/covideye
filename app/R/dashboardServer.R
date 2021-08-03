@@ -476,7 +476,11 @@ dailyRatesServer <- function(id, covid.confd, dark_mode) {
           displaylogo    = FALSE,
           showTips       = FALSE
         )
-      })
+      }) %>%
+        bindCache(
+          dark_mode(),
+          input$date_rng
+        )
     }
   )
 }
@@ -556,11 +560,12 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
         selectInput(
           ns("list"),
           "Select County",
-          rank()$local,
-          multiple = FALSE,
-          selectize = TRUE
+          rank()$local
         )
-      })
+      }) %>%
+        bindCache(
+          target()
+        )
       
       # Selected county's data
       selection <- reactive({
@@ -702,7 +707,11 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
           displaylogo    = FALSE,
           showTips       = FALSE
         )
-      })
+      }) %>% bindCache(
+        dark_mode(),
+        target(),
+        input$list
+      )
     }
   )
 }
