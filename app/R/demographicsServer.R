@@ -48,7 +48,7 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
       covid.age <- covid.age %>%
         inner_join(pop.age, by = "ages") %>%
         mutate(
-          cases.adj  = cases * 100000  / pop,
+          cases.adj  = cases  * 100000 / pop,
           hospts.adj = hospts * 100000 / pop,
           deaths.adj = deaths * 100000 / pop
         )

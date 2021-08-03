@@ -2,8 +2,9 @@
 
 # Libraries
 library(RSocrata)
-library(dplyr)
 library(data.table)
+library(dplyr)
+library(stringr)
 library(zoo)
 
 # Create Directories
@@ -79,10 +80,12 @@ rm(covid.confd)
 covid.age <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
 
 covid.age <- covid.age %>%
+  # We only want age ranges from 0-9, 10-19, etc
+  filter(age_group_type == "Case Age Group") %>%
   # Fix Data Types
   transmute(
     date   = as.Date(report_date),
-    ages   = age_group,
+    ages   = str_remove(age_group, " Years"),
     cases  = as.numeric(number_of_cases),
     hospts = as.numeric(number_of_hospitalizations),
     deaths = as.numeric(number_of_deaths)
