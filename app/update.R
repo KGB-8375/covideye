@@ -81,7 +81,7 @@ covid.age <- read.socrata("https://data.virginia.gov/resource/uktn-mwig.json")
 
 covid.age <- covid.age %>%
   # We only want age ranges from 0-9, 10-19, etc
-  filter(age_group_type == "Case Age Group") %>%
+  filter(age_group_type == "Cases") %>%
   # Fix Data Types
   transmute(
     date   = as.Date(report_date),
