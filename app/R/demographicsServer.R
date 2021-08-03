@@ -1,15 +1,15 @@
 # DEMOGRAPHICS SERVER MODULES 
 
-inputServer <- function(id, covid.sex) {
+inputServer <- function(id, min_date, max_date) {
   moduleServer(
     id,
     function(input, output, session) {
       output$date_ui <- renderUI({
         ns <- session$ns
         dateInput(ns("user_date"), "Select Date",
-                  min    = min(covid.sex$date),
-                  max    = max(covid.sex$date),
-                  value  = max(covid.sex$date),
+                  min    = min_date,
+                  max    = max_date,
+                  value  = max_date,
                   format = "m/d/yy"
         )
       })
@@ -577,7 +577,18 @@ demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop, dark_m
   moduleServer (
     id,
     function(input, output, session) {
-      inputs <- inputServer("input", covid.sex)
+      min_date <- max(
+        min(covid.age$date),
+        min(covid.sex$date),
+        min(covid.race$date)
+      )
+      max_date <- min(
+        max(covid.age$date),
+        max(covid.sex$date),
+        max(covid.race$date)
+      )
+      
+      inputs <- inputServer("input", min_date, max_date)
       ageServer("age", covid.age, inputs, pop, dark_mode)
       sexServer("sex", covid.sex, inputs, pop, dark_mode)
       raceServer("race", covid.race, inputs, pop, dark_mode)
