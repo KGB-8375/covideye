@@ -95,7 +95,7 @@ mapServer <- function(id, local, dark_mode) {
           dateInput(
             ns("date"),
             label  = "Select Date",
-            format = "m/dd/yyyy",
+            format = "m/d/yy",
             max    = local.max,
             min    = local.min(),
             value  = local.max
@@ -374,7 +374,7 @@ dailyRatesServer <- function(id, covid.confd, dark_mode) {
         dateRangeInput(
           ns("date_rng"),
           "Select Range",
-          format = "m/dd/yyyy",
+          format = "m/d/yy",
           start  = covid.confd.min,
           end    = covid.confd.max,
           min    = covid.confd.min,
@@ -382,14 +382,22 @@ dailyRatesServer <- function(id, covid.confd, dark_mode) {
         )
       })
       
+      int_rng <- function(x) {
+        x[1] %--% x[2]
+      }
+      
       # Target data with default oldest-newest
       rates_data <- reactive({
         req(input$date_rng)
         
-        subset(
-          covid.confd,
-          date >= input$date_rng[1] & date <= input$date_rng[2]
-        )
+        range <- input$date_rng %>%
+          int_rng() %>%
+          int_standardize()
+        
+        covid.confd %>%
+          filter(
+            date %within% range
+          )
       })
       
       fgcolor <- reactive({
@@ -421,7 +429,7 @@ dailyRatesServer <- function(id, covid.confd, dark_mode) {
             shape = "spline"
           ),
           y       = ~avg,
-          name    = "7-Day Average"
+          name    = "Total (7-Day Average)"
           # Bar 1
         ) %>% add_trace (
           type  = 'bar',

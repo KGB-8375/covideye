@@ -10,7 +10,7 @@ inputServer <- function(id, covid.sex) {
                   min    = min(covid.sex$date),
                   max    = max(covid.sex$date),
                   value  = max(covid.sex$date),
-                  format = "m/dd/yy"
+                  format = "m/d/yy"
         )
       })
       
@@ -460,17 +460,17 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases by Minority\n(Population Adjusted)\n",
-            hospts = "Hospitalizations by Minority\n(Population Adjusted)\n",
-            deaths = "Deaths by Minority\n(Population Adjusted)\n"
+            cases  = "Cases by Race\n(Population Adjusted)\n",
+            hospts = "Hospitalizations by Race\n(Population Adjusted)\n",
+            deaths = "Deaths by Race\n(Population Adjusted)\n"
           )
         }
         else {
           switch(
             inputs$mode(),
-            cases  = "Cases by Minority\n(Total)\n",
-            hospts = "Hospitalizations by Minority\n(Total)\n",
-            deaths = "Deaths by Minority\n(Total)\n"
+            cases  = "Cases by Race\n(Total)\n",
+            hospts = "Hospitalizations by Race\n(Total)\n",
+            deaths = "Deaths by Race\n(Total)\n"
           )
         }
       })
