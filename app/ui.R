@@ -14,6 +14,7 @@ navbarPageWithInputs <- function(..., inputs) {
 tagList(
     useShinyjs(),
     extendShinyjs(script = "navigate.js", functions = c("updateHistory")),
+    tags$head(tags$script(src = "matomo.js")),
     
     navbarPageWithInputs(
         title       = "CovidEye",
@@ -27,11 +28,11 @@ tagList(
             dashboardUI("dashboard")
         ),
         # By County
-        tabPanel(
-            title = "By County",
-            value = "by-county",
-            byCountyUI("byCounty")
-        ),
+        # tabPanel(
+        #     title = "By County",
+        #     value = "by-county",
+        #     byCountyUI("byCounty")
+        # ),
         # Demographics
         tabPanel(
             title = "Demographics",
@@ -43,6 +44,12 @@ tagList(
             title = "About",
             value = "about",
             includeMarkdown("about.md")
+        ),
+        # Privacy Policy
+        tabPanel(
+            title = "Privacy Policy",
+            value = "privacy-policy",
+            includeMarkdown("privacy_policy.md")
         ),
         # Dark Mode
         inputs = tagList(
@@ -60,7 +67,7 @@ tagList(
         # Disclaimer
         footer = tagList(
             hr(),
-            wellPanel(includeText("disclaimer.txt"), style = "font-size:8pt")
+            wellPanel(includeMarkdown("disclaimer.md"), style = "font-size:8pt")
         )
     )
 )
