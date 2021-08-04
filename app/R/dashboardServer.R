@@ -335,6 +335,7 @@ mapServer <- function(id, local, dark_mode, navbar) {
       # Background changer
       observe({
         req(navbar() == "dashboard")
+        req(!is.null(dark_mode()))
         ns <- session$ns
         
         if(dark_mode()) {
