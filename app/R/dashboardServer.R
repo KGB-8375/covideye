@@ -51,7 +51,7 @@ statsServer <- function(id, covid.confd, pop) {
 }
 
 # Choropleth map
-mapServer <- function(id, local, dark_mode) {
+mapServer <- function(id, local, dark_mode, navbar) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -274,9 +274,10 @@ mapServer <- function(id, local, dark_mode) {
       
       # Draw location on map
       observe({
-        ns <- session$ns
         req(input$geolocation)
-
+        req(navbar() == "dashboard")
+        ns <- session$ns
+        
         leafletProxy(
           ns("map")
         ) %>%
@@ -291,6 +292,7 @@ mapServer <- function(id, local, dark_mode) {
       
       # Draw full map with responsive elements
       observe({
+        req(navbar() == "dashboard")
         ns  <- session$ns
         pal <- color_fun()
         
@@ -332,9 +334,8 @@ mapServer <- function(id, local, dark_mode) {
       
       # Background changer
       observe({
+        req(navbar() == "dashboard")
         ns <- session$ns
-        # make sure this doesn't happen too early
-        req(input$date)
         
         if(dark_mode()) {
           leafletProxy(ns("map")) %>%
@@ -724,12 +725,12 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
   )
 }
 
-dashboardServer <- function(id, local, covid.confd, pop, dark_mode) {
+dashboardServer <- function(id, local, covid.confd, pop, dark_mode, navbar) {
   moduleServer(
     id,
     function(input, output, session) {
       statsServer("stats", covid.confd, pop)
-      mapServer("map", local, dark_mode)
+      mapServer("map", local, dark_mode, navbar)
       dailyRatesServer("rates", covid.confd, dark_mode)
       countyHighestServer("highest", local@data, covid.confd, dark_mode)
     }

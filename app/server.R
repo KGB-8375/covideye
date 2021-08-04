@@ -60,7 +60,7 @@ thematic_shiny()
 
 # Main server functionality for website
 function(input, output, session) {
-    dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode))
+    dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode), reactive(input$navbar))
     byCountyServer("byCounty")
     demographicsServer("demographics", covid.age, covid.race, covid.sex, pop, reactive(input$dark_mode))
     
