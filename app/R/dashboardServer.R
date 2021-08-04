@@ -84,10 +84,11 @@ mapServer <- function(id, local, dark_mode, navbar) {
         bounds <- bbox(local) %>%
           as.vector()
         
-        mapDrawn(TRUE)
-        
-        leaflet() %>%
+        map <- leaflet() %>%
           fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
+        
+        mapDrawn(TRUE)
+        return(map)
       })
       
       # Date selector input
