@@ -77,10 +77,14 @@ mapServer <- function(id, local, dark_mode, navbar) {
           )
       }
       
+      mapDrawn <- reactiveVal(FALSE)
+      
       # Draw initial map (only sets up map zoom level)
       output$map <- renderLeaflet({
         bounds <- bbox(local) %>%
           as.vector()
+        
+        mapDrawn(TRUE)
         
         leaflet() %>%
           fitBounds(bounds[1], bounds[2], bounds[3], bounds[4])
@@ -273,9 +277,10 @@ mapServer <- function(id, local, dark_mode, navbar) {
       )
       
       # Draw location on map
-      observe({
+      observeEvent(input$lat | input$lng, {
         req(input$geolocation)
         req(navbar() == "dashboard")
+        req(mapDrawn())
         ns <- session$ns
         
         leafletProxy(
@@ -291,8 +296,9 @@ mapServer <- function(id, local, dark_mode, navbar) {
       })
       
       # Draw full map with responsive elements
-      observe({
+      observeEvent(value(), {
         req(navbar() == "dashboard")
+        req(mapDrawn())
         ns  <- session$ns
         pal <- color_fun()
         
@@ -333,9 +339,10 @@ mapServer <- function(id, local, dark_mode, navbar) {
       })
       
       # Background changer
-      observe({
+      observeEvent(dark_mode(), {
         req(navbar() == "dashboard")
         req(!is.null(dark_mode()))
+        req(mapDrawn())
         ns <- session$ns
         
         if(dark_mode()) {
