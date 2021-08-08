@@ -27,12 +27,12 @@ tagList(
             value = "dashboard",
             dashboardUI("dashboard")
         ),
-        # By County
-        # tabPanel(
-        #     title = "By County",
-        #     value = "by-county",
-        #     byCountyUI("byCounty")
-        # ),
+         By County
+         tabPanel(
+             title = "By County",
+             value = "by-county",
+             byCountyUI("byCounty")
+         ),
         # Demographics
         tabPanel(
             title = "Demographics",
