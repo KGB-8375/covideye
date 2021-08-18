@@ -55,9 +55,6 @@ local <- local %>%
 
 rm(covid.local, pop.local)
 
-# Prepare theming
-thematic_shiny()
-
 # Main server functionality for website
 function(input, output, session) {
     dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode), reactive(input$navbar))

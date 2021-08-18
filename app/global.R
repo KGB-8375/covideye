@@ -1,26 +1,35 @@
 # Shared between UI and Server
 
 # Libraries
-library(shiny)
-library(shinyjs)
-library(shinyWidgets)
-library(bslib)
-library(thematic)
-library(data.table)
-library(rgdal)
-library(sp)
-library(dplyr)
-library(spdplyr)
-library(lubridate)
-library(zoo)
-library(BAMMtools)
-library(plotly)
-library(leaflet)
-library(htmltools)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  shiny,
+  shinyjs,
+  shinyWidgets,
+  bslib,
+  thematic,
+  data.table,
+  rgdal,
+  sp,
+  dplyr,
+  spdplyr,
+  lubridate,
+  zoo,
+  BAMMtools,
+  plotly,
+  leaflet,
+  htmltools
+)
 
-light <- bs_theme(bootswatch = "cosmo")
+# Theming
+light <- bs_theme(
+  bootswatch = "cosmo"
+)
+
 dark  <- bs_theme(
   bootswatch = "cosmo",
   bg = "#161616",
-  fg = "#D5D5D7",
-  danger = "#E12952")
+  fg = "#D5D5D7"
+)
+
+thematic_shiny()
