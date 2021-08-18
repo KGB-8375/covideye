@@ -1,9 +1,12 @@
 ## Retrieve all static data
 
 # Libraries
-library(RSocrata)
-library(dplyr)
-library(data.table)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  RSocrata,
+  dplyr,
+  data.table
+)
 
 # Create Directories
 dir.create("DATA")

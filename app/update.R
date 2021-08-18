@@ -1,11 +1,14 @@
 ## Retrieve all temporary data
 
 # Libraries
-library(RSocrata)
-library(data.table)
-library(dplyr)
-library(stringr)
-library(zoo)
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  RSocrata,
+  data.table,
+  dplyr,
+  stringr,
+  zoo
+)
 
 # Create Directories
 dir.create("DATA/temp", recursive = TRUE)
