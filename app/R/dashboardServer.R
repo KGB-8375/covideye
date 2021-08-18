@@ -1,14 +1,13 @@
 # DASHBOARD SERVER MODULES
 
 # Statistics
-statsServer <- function(id, covid.confd, pop) {
+statsServer <- function(id, covid.confd) {
   moduleServer(
     id,
     function(input, output, session) {
       # Prepare data
       stats <- covid.confd %>%
-        slice_max(date) %>%
-        bind_cols(list(pop = sum(pop$pop)))
+        slice_max(date)
       
       # Helper function, changes 10000 to 10,000
       fancy_num <- function(x) {
@@ -356,6 +355,10 @@ dailyRatesServer <- function(id, covid.confd) {
   moduleServer(
     id,
     function(input, output, session) {
+      # Suppress warning because first day doesn't have a rate
+      covid.confd <- covid.confd %>%
+        filter(date >= min(date) + 1)
+      
       output$rates <- renderPlotly({
         plot_ly(
           covid.confd,
@@ -671,11 +674,11 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
   )
 }
 
-dashboardServer <- function(id, local, covid.confd, pop, dark_mode) {
+dashboardServer <- function(id, local, covid.confd, dark_mode) {
   moduleServer(
     id,
     function(input, output, session) {
-      statsServer("stats", covid.confd, pop)
+      statsServer("stats", covid.confd)
       mapServer("map", local, dark_mode)
       dailyRatesServer("rates", covid.confd)
       countyHighestServer("highest", local@data, covid.confd, dark_mode)
