@@ -369,14 +369,6 @@ dailyRatesServer <- function(id, covid.confd, dark_mode) {
       covid.confd.min = min(covid.confd$date) + 1
       covid.confd.max = max(covid.confd$date)
       
-      covid.confd <- covid.confd %>%
-        arrange(date) %>%
-        mutate(
-          rate.c = cases.c - lag(cases.c),
-          rate.p = cases.p - lag(cases.p),
-          avg    = rollmean(cases.t - lag(cases.t), 7, fill = NA)
-        )
-      
       # Date selector input
       output$date_ui <- renderUI({
         ns <- session$ns

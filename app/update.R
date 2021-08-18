@@ -68,6 +68,12 @@ covid.confd <- covid.confd %>%
     cases.t  = cases.c  + cases.p,
     hospts.t = hospts.c + hospts.p,
     deaths.t = deaths.c + deaths.p
+  ) %>%
+  arrange(date) %>%
+  mutate(
+    rate.c = cases.c - lag(cases.c),
+    rate.p = cases.p - lag(cases.p),
+    avg    = rollmean(cases.t - lag(cases.t), 7, fill = NA)
   )
   
 
