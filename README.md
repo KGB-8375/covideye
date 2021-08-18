@@ -4,11 +4,11 @@ CovidEye is an web application that displays COVID-19 data for the state of Virg
 ![screenshot](./Screenshot.png)
 
 ## Development
-The project uses R shiny as the base framework. This allows us to maintain data-driven code in a convenient way with minimal custom JavaScript and CSS.
+The project uses R shiny as the base framework. This allows us to create an interactive and visually appealing site with minimal handwritten HTML, CSS, and JS.
 
-Each page is divided into a separate module, which is then divided further into sub-modules, allowing us to have an organized and readable codebase with reusable code.
+To see our current development progress, view our [Trello](https://trello.com/b/uoXWHzLu/covideye-development-overview)!
 
-If you want to contribute, either make a github issue or email rvanathanrowan@gmail.com with your suggestions before making a pull-request.
+If you want to contribute, please email rvanathanrowan@gmail.com.
 
 ## Building
 The stable website covideye.org doesn’t always have the most up-to-date features. To run the development version yourself clone the repo and open the project with RStudio. Then simply run `shiny::runApp()`. The first time this command is run will take some time to download the data.
