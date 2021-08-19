@@ -68,20 +68,7 @@ mapUI <- function(id) {
 dailyRatesUI <- function(id) {
   ns <- NS(id)
   
-  tagList(
-    plotlyOutput(ns("rates")),
-    fluidRow(
-      align = "center",
-      column(width = 4),
-      column(
-        width = 4,
-        inputPanel(
-          htmlOutput(ns("date_ui"))
-        )
-      ),
-      column(width = 4)
-    )
-  )
+  plotlyOutput(ns("rates"))
 }
 
 # Display county with the highest XYZ

@@ -57,7 +57,7 @@ rm(covid.local, pop.local)
 
 # Main server functionality for website
 function(input, output, session) {
-    dashboardServer("dashboard", local, covid.confd, pop, reactive(input$dark_mode), reactive(input$navbar))
+    dashboardServer("dashboard", local, covid.confd, reactive(input$dark_mode))
     byCountyServer("byCounty")
     demographicsServer("demographics", covid.age, covid.race, covid.sex, pop, reactive(input$dark_mode))
     
@@ -65,9 +65,9 @@ function(input, output, session) {
     observe(
         session$setCurrentTheme(
             if (input$dark_mode) 
-                dark
+                bs_theme_update(dark)
             else
-                light
+                bs_theme_update(light)
         )
     )
     
