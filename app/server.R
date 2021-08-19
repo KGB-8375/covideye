@@ -57,7 +57,7 @@ rm(covid.local, pop.local)
 
 # Main server functionality for website
 function(input, output, session) {
-    dashboardServer("dashboard", local, covid.confd, reactive(input$dark_mode))
+    dashboardServer("dashboard", local, covid.confd)
     byCountyServer("byCounty")
     demographicsServer("demographics", covid.age, covid.race, covid.sex, pop, reactive(input$dark_mode))
     
