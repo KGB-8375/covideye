@@ -50,7 +50,7 @@ statsServer <- function(id, covid.confd) {
 }
 
 # Choropleth map
-mapServer <- function(id, local, dark_mode) {
+mapServer <- function(id, local) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -83,7 +83,7 @@ mapServer <- function(id, local, dark_mode) {
         
         map <- leaflet() %>%
           fitBounds(bounds[1], bounds[2], bounds[3], bounds[4]) %>%
-          addProviderTiles(providers$CartoDB.DarkMatterNoLabels)
+          addProviderTiles(providers$CartoDB.PositronNoLabels)
         
         return(map)
       })
@@ -333,10 +333,10 @@ mapServer <- function(id, local, dark_mode) {
       })
       
       # Background changer
-      observeEvent(dark_mode(), {
+      observeEvent(session$getCurrentTheme(), {
         ns <- session$ns
         
-        if(dark_mode()) {
+        if(bs_get_variables(session$getCurrentTheme(), "bg") == "#161616") {
           leafletProxy(ns("map")) %>%
             clearTiles() %>%
             addProviderTiles(providers$CartoDB.DarkMatterNoLabels)
@@ -444,7 +444,7 @@ dailyRatesServer <- function(id, covid.confd) {
 }
 
 # Display county with the highest XYZ
-countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
+countyHighestServer <- function(id, covid.local) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -454,22 +454,9 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
         select(pop) %>%
         sum()
       
-      covid.confd <- covid.confd %>%
-        arrange(date) %>%
-        # Systematically rename
-        transmute(
-          date        = date,
-          total.c     = cases.t,
-          total.h     = hospts.t,
-          total.d     = deaths.t
-        ) %>%
-        # Calculate the rates
-        mutate(
-          rate.c = rollmean(total.c - lag(total.c), 7, fill = NA, align = "right"),
-          rate.h = rollmean(total.h - lag(total.h), 7, fill = NA, align = "right"),
-          rate.d = rollmean(total.d - lag(total.d), 7, fill = NA, align = "right")
-        ) %>%
-        # Adjust for population
+      covid.va <- covid.local %>%
+        group_by(date) %>%
+        summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.))) %>%
         mutate(
           total.c.adj = total.c * 100000 / pop,
           total.h.adj = total.h * 100000 / pop,
@@ -497,7 +484,7 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
       
       # Select target metric for state
       value.va <- reactive({
-        covid.confd %>%
+        covid.va %>%
           select(
             date,
             target.va = ends_with(target())
@@ -505,7 +492,7 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
       })
       
       # Rank values for selection input
-      rank <- reactive({
+      rank_list <- reactive({
         value.co() %>%
           slice_max(date) %>%
           arrange(desc(target.co))
@@ -518,7 +505,7 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
         selectInput(
           ns("list"),
           "Select County",
-          rank()$local
+          rank_list()$local
         )
       }) %>%
         bindCache(
@@ -585,22 +572,6 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
         )
       })
       
-      fgcolor <- reactive({
-        if(dark_mode()) {
-          "lightgrey"
-        } else {
-          "black"
-        }
-      })
-      
-      bgcolor <- reactive({
-        if(dark_mode()) {
-          "black"
-        } else {
-          "white"
-        }
-      })
-
       output$chart <- renderPlotly({
         req(input$list)
         
@@ -621,26 +592,33 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
           y    = ~target.va,
           name = title_va(),
           line = list(
-            color = fgcolor(),
+            color = getCurrentOutputInfo()$fg(),
             shape = "spline"
           )
         ) %>% layout (
           # Setup
           title = title_plot(),
           legend = list(
-            x           = 0,
+            x           = 0.01,
             y           = 1,
             bgcolor     = "transparent",
             bordercolor = "transparent"
           ),
           yaxis = list(
-            title      = title_yaxis(),
-            showgrid   = FALSE,
+            title      = list(
+              text = title_yaxis(),
+              font = list(size = 20)
+            ),
+            showgrid   = TRUE,
+            gridcolor  = getCurrentOutputInfo()$bg(),
+            gridwidth  = 2,
             fixedrange = TRUE
           ),
           xaxis = list(
             title          = "Date",
-            showgrid       = FALSE,
+            showgrid       = TRUE,
+            gridcolor      = getCurrentOutputInfo()$bg(),
+            gridwidth      = 2,
             fixedrange     = TRUE,
             showspikes     = TRUE,
             spikethickness = 2,
@@ -649,16 +627,18 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
             spikemode      = 'across'
           ),
           hoverlabel = list(
-            bordercolor = fgcolor(),
-            bgcolor     = bgcolor()
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
           ),
+          margin = list(t = 50),
           hovermode     = 'x unified',
           hoverdistance = 1,
           spikedistance = 1000,
           paper_bgcolor = "transparent",
-          plot_bgcolor  = "transparent",
+          plot_bgcolor  = thematic_get_mixture(0.05),
           font = list(
-            color = fgcolor()
+            color = getCurrentOutputInfo()$fg(),
+            size  = 14
           )
         ) %>% config (
           displayModeBar = FALSE,
@@ -666,7 +646,7 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
           showTips       = FALSE
         )
       }) %>% bindCache(
-        dark_mode(),
+        getCurrentOutputInfo()$fg(),
         target(),
         input$list
       )
@@ -674,14 +654,14 @@ countyHighestServer <- function(id, covid.local, covid.confd, dark_mode) {
   )
 }
 
-dashboardServer <- function(id, local, covid.confd, dark_mode) {
+dashboardServer <- function(id, local, covid.confd) {
   moduleServer(
     id,
     function(input, output, session) {
       statsServer("stats", covid.confd)
-      mapServer("map", local, dark_mode)
+      mapServer("map", local)
       dailyRatesServer("rates", covid.confd)
-      countyHighestServer("highest", local@data, covid.confd, dark_mode)
+      countyHighestServer("highest", local@data)
     }
   )
 } 
