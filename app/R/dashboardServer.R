@@ -5,10 +5,6 @@ statsServer <- function(id, covid.confd) {
   moduleServer(
     id,
     function(input, output, session) {
-      # Prepare data
-      stats <- covid.confd %>%
-        slice_max(date)
-      
       # Helper function, changes 10000 to 10,000
       fancy_num <- function(x) {
         format(
@@ -19,32 +15,15 @@ statsServer <- function(id, covid.confd) {
         )
       }
       
-      # Number of cases
-      output$cases <- renderUI({
-        tagList(
-          h2("Total Cases: ", fancy_num(stats$cases.t)),
-          h4(fancy_num(stats$cases.c), "Confirmed | ",
-             fancy_num(stats$cases.p), "Probable")
-        )
-      })
+      # Prepare data
+      stats <- covid.confd %>%
+        slice_max(date) %>%
+        select(cases.c:deaths.t) %>%
+        map(fancy_num)
       
-      # Number of hospitalizations
-      output$hospts <- renderUI({
-        tagList(
-          h2("Total Hospitalizations: ", fancy_num(stats$hospts.t)),
-          h4(fancy_num(stats$hospts.c), "Confirmed | ",
-             fancy_num(stats$hospts.p), "Probable")
-        )
-      })
-      
-      # Number of deaths
-      output$deaths <- renderUI({
-        tagList(
-          h2("Total Deaths: ", fancy_num(stats$deaths.t)),
-          h4(fancy_num(stats$deaths.c), "Confirmed | ",
-             fancy_num(stats$deaths.p), "Probable")
-        )
-      })
+      for(i in names(stats)) {
+        output[[i]] <- renderText(stats[[i]])
+      }
     }
   )
 }

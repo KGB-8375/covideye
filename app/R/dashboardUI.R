@@ -1,6 +1,14 @@
 # DASHBOARD UI MODULES
 
 # Statistics
+statBuilder <- function(name, display) {
+  tagList(
+    h2(paste0("Total ", display, ": "), textOutput(paste0(name, ".t"), inline = TRUE)),
+    h4(textOutput(paste0(name, ".c"), inline = TRUE), "Confirmed | ",
+       textOutput(paste0(name, ".p"), inline = TRUE), "Probable")
+  )
+}
+
 statsUI <- function(id) {
   ns <- NS(id)
   
@@ -9,15 +17,15 @@ statsUI <- function(id) {
       align = 'center',
       column(
         width = 4,
-        htmlOutput(ns("cases"))
+        statBuilder(ns("cases"), "Cases")
       ),
       column(
         width = 4,
-        htmlOutput(ns("hospts"))
+        statBuilder(ns("hospts"), "Hospitilizations")
       ),
       column(
         width = 4,
-        htmlOutput(ns("deaths"))
+        statBuilder(ns("deaths"), "Deaths")
       )
     ) 
   )
