@@ -75,3 +75,18 @@ targetInputUI <- function(id) {
     )
   )
 }
+
+countyInputUI <- function(id) {
+  ns <- NS(id)
+  
+  pickerInput(
+    ns("county"),
+    "Select County",
+    options = list(
+      `live-search` = TRUE,
+      `dropup-auto` = FALSE,
+      `style`       = "btn-outline-danger"
+    ),
+    choices = c("Placeholder")
+  )
+}

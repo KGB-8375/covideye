@@ -376,7 +376,12 @@ countyHighestServer <- function(id, covid.local) {
   moduleServer(
     id,
     function(input, output, session) {
-      # Prepare data
+      # Widget Servers
+      type   <- hotspotInputServer("rank")
+      mode   <- targetInputServer("mode")
+      county <- countyInputServer("county", reactive(rank_list()$local))
+      
+      # Prepare data 
       pop <- covid.local %>%
         slice_max(date) %>%
         select(pop) %>%
@@ -384,7 +389,7 @@ countyHighestServer <- function(id, covid.local) {
       
       covid.va <- covid.local %>%
         group_by(date) %>%
-        summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.))) %>%
+        summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.x))) %>%
         mutate(
           total.c.adj = total.c * 100000 / pop,
           total.h.adj = total.h * 100000 / pop,
@@ -396,7 +401,7 @@ countyHighestServer <- function(id, covid.local) {
       
       target <- reactive({
         paste0(
-          input$rank, input$mode, if(input$adjust) {".adj"}
+          type(), ".", mode$mode(), if(mode$adjust()) {".adj"}
         )
       })
       
@@ -426,48 +431,34 @@ countyHighestServer <- function(id, covid.local) {
           arrange(desc(target.co))
       })
       
-      # County selection, ranked in descending order
-      output$list <- renderUI({
-        ns <- session$ns
-        
-        selectInput(
-          ns("list"),
-          "Select County",
-          rank_list()$local
-        )
-      }) %>%
-        bindCache(
-          target()
-        )
-      
       # Selected county's data
       selection <- reactive({
-        req(input$list)
+        req(county() != "Placeholder")
         
         value.co() %>%
-          filter(local == input$list) %>%
+          filter(local == county()) %>%
           inner_join(value.va(), by = "date")
       })
       
       title_plot <- reactive({
-        req(input$list)
+        req(county() != "Placeholder")
         
         paste(
           switch(
-            input$rank,
+            type(),
             "total" = "Total",
             "rate"  = "Daily"
           ),
           switch(
-            input$mode,
-            ".c" = "Cases",
-            ".h" = "Hospitalizations",
-            ".d" = "Deaths"
+            mode$mode(),
+            "c" = "Cases",
+            "h" = "Hospitalizations",
+            "d" = "Deaths"
           ),
           "in",
-          input$list,
+          county(),
           "vs. State",
-          if(input$adjust) {
+          if(mode$adjust()) {
             "Average (Population Adjusted)"
           } else {
             "Total"
@@ -478,12 +469,12 @@ countyHighestServer <- function(id, covid.local) {
       title_yaxis <- reactive({
         paste(
           switch(
-            input$mode,
-            ".c" = "Cases",
-            ".h" = "Hospitalizations",
-            ".d" = "Deaths"
+            mode$mode(),
+            "c" = "Cases",
+            "h" = "Hospitalizations",
+            "d" = "Deaths"
           ),
-          if(input$adjust) {
+          if(mode$adjust()) {
             "per 100k"
           }
         )
@@ -492,7 +483,7 @@ countyHighestServer <- function(id, covid.local) {
       title_va <- reactive({
         paste(
           "VA",
-          if(input$adjust) {
+          if(mode$adjust()) {
             "Average"
           } else {
             "Total"
@@ -501,8 +492,8 @@ countyHighestServer <- function(id, covid.local) {
       })
       
       output$chart <- renderPlotly({
-        req(input$list)
-        
+        req(county() != "Placeholder")
+
         plot_ly(
           selection(),
           x     = ~date,
@@ -510,7 +501,7 @@ countyHighestServer <- function(id, covid.local) {
         ) %>% add_lines (
           # County cases
           y    = ~target.co,
-          name = input$list,
+          name = county(),
           line = list(
             color = "red",
             shape = "spline"
@@ -576,7 +567,7 @@ countyHighestServer <- function(id, covid.local) {
       }) %>% bindCache(
         getCurrentOutputInfo()$fg(),
         target(),
-        input$list
+        county()
       )
     }
   )

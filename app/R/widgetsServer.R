@@ -69,3 +69,16 @@ targetInputServer <- function(id) {
     }
   )
 }
+
+countyInputServer <- function(id, counties) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+      observeEvent(counties(), {
+        updatePickerInput(session, "county", choices = counties())
+      })
+      
+      return(reactive(input$county))
+    }
+  )
+}
