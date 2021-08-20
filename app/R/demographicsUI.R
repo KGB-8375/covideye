@@ -1,29 +1,5 @@
 # DEMOGRAPHICS UI
 
-# Input
-inputUI <- function(id) {
-  ns <- NS(id)
-  
-  wellPanel(
-    htmlOutput(ns("date_ui")),
-    radioButtons(
-      inputId = ns("mode"),
-      label = "Show",
-      selected = "cases",
-      choices = list(
-        "Cases" = "cases",
-        "Hospitalizations" = "hospts",
-        "Deaths" = "deaths"
-      )
-    ),
-    checkboxInput(
-      inputId = ns("pop_adj"),
-      label = "Adjust for Population",
-      value = TRUE
-    )
-  )
-}
-
 # Age
 ageUI <- function(id) {
   ns <- NS(id)
@@ -71,7 +47,10 @@ demographicsUI <- function(id) {
       column(width = 4),
       column(
         width = 4,
-        inputUI(ns("input"))
+        wellPanel(
+          dateInputUI(ns("date")),
+          targetInputUI(ns("target"))
+        )
       ),
       column(width = 4)
     )
