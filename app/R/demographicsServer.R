@@ -1,30 +1,5 @@
 # DEMOGRAPHICS SERVER MODULES 
 
-inputServer <- function(id, min_date, max_date) {
-  moduleServer(
-    id,
-    function(input, output, session) {
-      output$date_ui <- renderUI({
-        ns <- session$ns
-        dateInput(ns("user_date"), "Select Date",
-                  min    = min_date,
-                  max    = max_date,
-                  value  = max_date,
-                  format = "m/d/yy"
-        )
-      })
-      
-      return(
-        list(
-          date = reactive({input$user_date}),
-          mode = reactive({input$mode}),
-          adj  = reactive({input$pop_adj})
-        )
-      )
-    }
-  )
-}
-
 ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
   moduleServer(
     id,
@@ -67,7 +42,12 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
         date_sel() %>%
           select(
             ends_with(paste0(
-              inputs$mode(),
+              switch(
+                inputs$mode(),
+                c = "cases",
+                h = "hospts",
+                d = "deaths"
+              ),  
               if(inputs$adj()) {
                 ".adj"
               }
@@ -81,17 +61,17 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases by Age\n(Population Adjusted)",
-            hospts = "Hospitalizations by Age\n(Population Adjusted)",
-            deaths = "Deaths by Age\n(Population Adjusted)"
+            c = "Cases by Age\n(Population Adjusted)",
+            h = "Hospitalizations by Age\n(Population Adjusted)",
+            d = "Deaths by Age\n(Population Adjusted)"
           )
         }
         else {
           switch(
             inputs$mode(),
-            cases  = "Cases by Age\n(Total)",
-            hospts = "Hospitalizations by Age\n(Total)",
-            deaths = "Deaths by Age\n(Total)"
+            c = "Cases by Age\n(Total)",
+            h = "Hospitalizations by Age\n(Total)",
+            d = "Deaths by Age\n(Total)"
           )
         }
       })
@@ -100,17 +80,17 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases per 100k",
-            hospts = "Hospitalizations per 100k",
-            deaths = "Deaths per 100k"
+            c = "Cases per 100k",
+            h = "Hospitalizations per 100k",
+            d = "Deaths per 100k"
           )
         }
         else {
           switch(
             inputs$mode(),
-            cases  = "Cases",
-            hospts = "Hospitalizations",
-            deaths = "Deaths"
+            c = "Cases",
+            h = "Hospitalizations",
+            d = "Deaths"
           )
         }
       })
@@ -118,19 +98,19 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
       age_color <- reactive({
         switch(
           inputs$mode(),
-          cases = list(
+          c = list(
             color = '#d47d3d',
             line  = list(
               color = '#c23719',
               width = 1.5)
           ),
-          hospts = list(
+          h = list(
             color = '#a7a3cd',
             line  = list(
               color = '#7760ab',
               width = 1.5)
           ),
-          deaths = list(
+          d = list(
             color = '#808080',
             line  = list(
               color = '#3a3a3a',
@@ -263,7 +243,12 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         date_sel() %>%
           select(
             ends_with(paste0(
-              inputs$mode(),
+              switch(
+                inputs$mode(),
+                c = "cases",
+                h = "hospts",
+                d = "deaths"
+              ),
               if(inputs$adj()) {
                 ".adj"
               }
@@ -277,17 +262,17 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases by Sex\n(Population Adjusted)",
-            hospts = "Hospitalizations by Sex\n(Population Adjusted)",
-            deaths = "Deaths by Sex\n(Population Adjusted)"
+            c = "Cases by Sex\n(Population Adjusted)",
+            h = "Hospitalizations by Sex\n(Population Adjusted)",
+            d = "Deaths by Sex\n(Population Adjusted)"
           )
         }
         else {
           switch(
             inputs$mode(),
-            cases  = "Cases by Sex\n(Total)",
-            hospts = "Hospitalizations by Sex\n(Total)",
-            deaths = "Deaths by Sex\n(Total)"
+            c = "Cases by Sex\n(Total)",
+            h = "Hospitalizations by Sex\n(Total)",
+            d = "Deaths by Sex\n(Total)"
           )
         }
       })
@@ -296,16 +281,16 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases per 100k",
-            hospts = "Hospitalizations per 100k",
-            deaths = "Deaths per 100k")
+            c = "Cases per 100k",
+            h = "Hospitalizations per 100k",
+            d = "Deaths per 100k")
         }
         else {
           switch(
             inputs$mode(),
-            cases = "Cases",
-            hospts = "Hospitalizations",
-            deaths = "Deaths")
+            c = "Cases",
+            h = "Hospitalizations",
+            d = "Deaths")
         }
       })
       
@@ -446,7 +431,12 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
         date_sel() %>%
           select(
             ends_with(paste0(
-              inputs$mode(),
+              switch(
+                inputs$mode(),
+                c = "cases",
+                h = "hospts",
+                d = "deaths"
+              ),
               if(inputs$adj()) {
                 ".adj"
               }
@@ -460,17 +450,17 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
         if(inputs$adj()) {
           switch(
             inputs$mode(),
-            cases  = "Cases by Race\n(Population Adjusted)\n",
-            hospts = "Hospitalizations by Race\n(Population Adjusted)\n",
-            deaths = "Deaths by Race\n(Population Adjusted)\n"
+            c = "Cases by Race\n(Population Adjusted)\n",
+            h = "Hospitalizations by Race\n(Population Adjusted)\n",
+            d = "Deaths by Race\n(Population Adjusted)\n"
           )
         }
         else {
           switch(
             inputs$mode(),
-            cases  = "Cases by Race\n(Total)\n",
-            hospts = "Hospitalizations by Race\n(Total)\n",
-            deaths = "Deaths by Race\n(Total)\n"
+            c = "Cases by Race\n(Total)\n",
+            h = "Hospitalizations by Race\n(Total)\n",
+            d = "Deaths by Race\n(Total)\n"
           )
         }
       })
@@ -577,18 +567,26 @@ demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop, dark_m
   moduleServer (
     id,
     function(input, output, session) {
-      min_date <- max(
+      min_date <- reactiveVal(max(
         min(covid.age$date),
         min(covid.sex$date),
         min(covid.race$date)
-      )
-      max_date <- min(
+      ))
+      max_date <- reactiveVal(min(
         max(covid.age$date),
         max(covid.sex$date),
         max(covid.race$date)
+      ))
+      
+      date   <- dateInputServer("date", min_date, max_date)
+      target <- targetInputServer("target")
+      
+      inputs <- list(
+        date = date,
+        mode = target$mode,
+        adj  = target$adjust
       )
       
-      inputs <- inputServer("input", min_date, max_date)
       ageServer("age", covid.age, inputs, pop, dark_mode)
       sexServer("sex", covid.sex, inputs, pop, dark_mode)
       raceServer("race", covid.race, inputs, pop, dark_mode)
