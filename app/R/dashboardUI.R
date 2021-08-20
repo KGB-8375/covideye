@@ -42,32 +42,9 @@ mapUI <- function(id) {
     ),
     sidebarPanel(
       width = 3,
-      radioGroupButtons(
-        ns("type"),
-        label = "Type of Map",
-        choices = list(
-          "Cumulative Totals" = "total",
-          "Hotspots"          = "rate"
-        ),
-        justified = TRUE,
-        status    = "danger"
-      ),
-      htmlOutput(ns("date_ui")),
-      radioButtons(
-        ns("mode"),
-        label = "Show",
-        choices = list(
-          "Total Cases"      = ".c",
-          "Hospitalizations" = ".h",
-          "Deaths"           = ".d"
-        ),
-        selected = ".c"
-      ),
-      checkboxInput(
-        ns("adjust"),
-        label = "Adjust for population",
-        value = TRUE
-      )
+      hotspotInputUI(ns("type"), "Type of Map"),
+      dateInputUI(ns("date")),
+      targetInputUI(ns("target"))
     )
   )
 }
@@ -90,31 +67,9 @@ countyHighestUI <- function(id) {
     ),
     sidebarPanel(
       width = 3,
-      radioButtons(
-        ns("mode"),
-        label = "Show",
-        choices = list(
-          "Total Cases"      = ".c",
-          "Hospitalizations" = ".h",
-          "Deaths"           = ".d"
-        ),
-        selected = ".c"
-      ),
-      checkboxInput(
-        ns("adjust"),
-        label = "Adjust for population",
-        value = TRUE
-      ),
-      radioButtons(
-        ns("rank"),
-        label = "Rank by",
-        choices = list(
-          "Total"      = "total",
-          "Daily Rate" = "rate"
-        ),
-        selected = "rate"
-      ),
-      htmlOutput(ns("list"))
+      hotspotInputUI(ns("rank"), "Rank By"),
+      targetInputUI(ns("mode")),
+      countyInputUI(ns("county"))
     )
   )
 }

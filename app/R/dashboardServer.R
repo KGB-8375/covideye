@@ -33,16 +33,23 @@ mapServer <- function(id, local) {
   moduleServer(
     id,
     function(input, output, session) {
-      # Prepare data
-      local.min <- reactive({
-        if(input$type == "rate") {
+      # Widget Servers
+      type    <- hotspotInputServer("type")
+      date_in <- dateInputServer("date", min_date, max_date)
+      target  <- targetInputServer("target")
+      
+      # Date Range
+      min_date <- reactive({
+        if(type() == "rate") {
           min(local$date) + 7 # 7-Day average kicks in
         } else {
           min(local$date)
         }
       })
       
-      local.max <- max(local$date)
+      max_date <- reactiveVal({
+        max(local$date)
+      })
       
       # Helper function
       fancy_num <- function(x) {
@@ -67,87 +74,29 @@ mapServer <- function(id, local) {
         return(map)
       })
       
-      # Date selector input
-      output$date_ui <- renderUI({
-        ns <- session$ns
-        
-        splitLayout(
-          cellWidths = c("auto", "auto", "auto"),
-          dateInput(
-            ns("date"),
-            label  = "Select Date",
-            format = "m/d/yy",
-            max    = local.max,
-            min    = local.min(),
-            value  = local.max
-          ),
-          actionBttn(
-            ns("date_prev"),
-            label = NULL,
-            style = "simple",
-            color = "danger",
-            icon  = icon("arrow-left"),
-            size  = "sm"
-          ),
-          actionBttn(
-            ns("date_next"),
-            label = NULL,
-            style = "simple",
-            color = "danger",
-            icon  = icon("arrow-right"),
-            size  = "sm"
-          ),
-          tags$style(
-            "#dashboard-map-date_prev, #dashboard-map-date_next {
-              margin-top: 32px;
-            }"
-          )
-        )
-      })
-      
-      # Previous Date
-      observeEvent(input$date_prev, {
-        req(input$date)
-        
-        date <- input$date
-        if(date > local.min()) {
-          updateDateInput(session, "date", value = date - 1)
-        }
-      })
-      
-      # Next Date
-      observeEvent(input$date_next, {
-        req(input$date)
-        
-        date <- input$date
-        if(date < local.max) {
-          updateDateInput(session, "date", value = date + 1)
-        }
-      })
-      
       # Date selection
       date_sel <- reactive({
-        req(input$date)
+        req(date_in())
         
         local %>%
-          filter(date == input$date)
+          filter(date == date_in())
       })
       
       # Generate Legend Title
       title <- reactive({
         paste(
           switch(
-            input$type,
+            type(),
             total = "Total",
             rate  = "Daily"
           ),
           switch(
-            input$mode,
-            .c  = "Cases",
-            .h = "Hospitalizations",
-            .d = "Deaths"
+            target$mode(),
+            c = "Cases",
+            h = "Hospitalizations",
+            d = "Deaths"
           ),
-          if(input$adjust) {
+          if(target$adjust()) {
             "per 100k"
           }
         )
@@ -157,7 +106,7 @@ mapServer <- function(id, local) {
       value <- reactive({
         date_sel() %>%
           select(
-            ends_with(paste0(input$type, input$mode, if(input$adjust) {".adj"}))
+            ends_with(paste0(type(), ".", target$mode(), if(target$adjust()) {".adj"}))
           ) %>%
           # Column 1 -> vector
           .[[1]]
@@ -166,17 +115,17 @@ mapServer <- function(id, local) {
       # Color range
       color <- reactive({
         switch(
-          input$mode,
-          .c = "YlOrRd",
-          .h = "Purples",
-          .d = "Greys"
+          target$mode(),
+          c = "YlOrRd",
+          h = "Purples",
+          d = "Greys"
         )
       })
       
       # Binning categories
       categories <- reactive({
         # Use Jenks Natural Breaks to find *8* bin categories
-        if(input$type == "total") {
+        if(type() == "total") {
           value() %>%
             getJenksBreaks(9) %>%
             # Make them easier to read
@@ -208,7 +157,7 @@ mapServer <- function(id, local) {
       })
       
       tooltip <- reactive({
-        if(input$type == "total") {
+        if(type() == "total") {
           sprintf(
             "<b>%s</b> (%s)</br>
             Total Cases: %s (%s / 100k)</br>
@@ -427,7 +376,12 @@ countyHighestServer <- function(id, covid.local) {
   moduleServer(
     id,
     function(input, output, session) {
-      # Prepare data
+      # Widget Servers
+      type   <- hotspotInputServer("rank")
+      mode   <- targetInputServer("mode")
+      county <- countyInputServer("county", reactive(rank_list()$local))
+      
+      # Prepare data 
       pop <- covid.local %>%
         slice_max(date) %>%
         select(pop) %>%
@@ -435,7 +389,7 @@ countyHighestServer <- function(id, covid.local) {
       
       covid.va <- covid.local %>%
         group_by(date) %>%
-        summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.))) %>%
+        summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.x))) %>%
         mutate(
           total.c.adj = total.c * 100000 / pop,
           total.h.adj = total.h * 100000 / pop,
@@ -447,7 +401,7 @@ countyHighestServer <- function(id, covid.local) {
       
       target <- reactive({
         paste0(
-          input$rank, input$mode, if(input$adjust) {".adj"}
+          type(), ".", mode$mode(), if(mode$adjust()) {".adj"}
         )
       })
       
@@ -477,48 +431,34 @@ countyHighestServer <- function(id, covid.local) {
           arrange(desc(target.co))
       })
       
-      # County selection, ranked in descending order
-      output$list <- renderUI({
-        ns <- session$ns
-        
-        selectInput(
-          ns("list"),
-          "Select County",
-          rank_list()$local
-        )
-      }) %>%
-        bindCache(
-          target()
-        )
-      
       # Selected county's data
       selection <- reactive({
-        req(input$list)
+        req(county() != "Placeholder")
         
         value.co() %>%
-          filter(local == input$list) %>%
+          filter(local == county()) %>%
           inner_join(value.va(), by = "date")
       })
       
       title_plot <- reactive({
-        req(input$list)
+        req(county() != "Placeholder")
         
         paste(
           switch(
-            input$rank,
+            type(),
             "total" = "Total",
             "rate"  = "Daily"
           ),
           switch(
-            input$mode,
-            ".c" = "Cases",
-            ".h" = "Hospitalizations",
-            ".d" = "Deaths"
+            mode$mode(),
+            "c" = "Cases",
+            "h" = "Hospitalizations",
+            "d" = "Deaths"
           ),
           "in",
-          input$list,
+          county(),
           "vs. State",
-          if(input$adjust) {
+          if(mode$adjust()) {
             "Average (Population Adjusted)"
           } else {
             "Total"
@@ -529,12 +469,12 @@ countyHighestServer <- function(id, covid.local) {
       title_yaxis <- reactive({
         paste(
           switch(
-            input$mode,
-            ".c" = "Cases",
-            ".h" = "Hospitalizations",
-            ".d" = "Deaths"
+            mode$mode(),
+            "c" = "Cases",
+            "h" = "Hospitalizations",
+            "d" = "Deaths"
           ),
-          if(input$adjust) {
+          if(mode$adjust()) {
             "per 100k"
           }
         )
@@ -543,7 +483,7 @@ countyHighestServer <- function(id, covid.local) {
       title_va <- reactive({
         paste(
           "VA",
-          if(input$adjust) {
+          if(mode$adjust()) {
             "Average"
           } else {
             "Total"
@@ -552,8 +492,8 @@ countyHighestServer <- function(id, covid.local) {
       })
       
       output$chart <- renderPlotly({
-        req(input$list)
-        
+        req(county() != "Placeholder")
+
         plot_ly(
           selection(),
           x     = ~date,
@@ -561,7 +501,7 @@ countyHighestServer <- function(id, covid.local) {
         ) %>% add_lines (
           # County cases
           y    = ~target.co,
-          name = input$list,
+          name = county(),
           line = list(
             color = "red",
             shape = "spline"
@@ -627,7 +567,7 @@ countyHighestServer <- function(id, covid.local) {
       }) %>% bindCache(
         getCurrentOutputInfo()$fg(),
         target(),
-        input$list
+        county()
       )
     }
   )
