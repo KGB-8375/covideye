@@ -25,7 +25,7 @@ inputServer <- function(id, min_date, max_date) {
   )
 }
 
-ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
+ageServer <- function(id, covid.age, inputs, pop) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -160,22 +160,6 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
         }
       })
       
-      fgcolor <- reactive({
-        if(dark_mode()) {
-          "lightgrey"
-        } else {
-          "black"
-        }
-      })
-      
-      bgcolor <- reactive({
-        if(dark_mode()) {
-          "black"
-        } else {
-          "white"
-        }
-      })
-      
       # Age Plotly
       output$age <- renderPlotly({
         plot_ly(
@@ -200,11 +184,11 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
           font = list(
-            color = fgcolor()
+            color = getCurrentOutputInfo()$fg()
           ),
           hoverlabel = list(
-            bordercolor = fgcolor(),
-            bgcolor     = bgcolor()
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
           )
         ) %>% config(
           displayModeBar = FALSE,
@@ -212,7 +196,7 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
           showTips       = FALSE
         )
       }) %>% bindCache(
-        dark_mode(),
+        getCurrentOutputInfo()$fg(),
         inputs$date(),
         inputs$mode(),
         inputs$adj()
@@ -221,7 +205,7 @@ ageServer <- function(id, covid.age, inputs, pop, dark_mode) {
   )
 }
 
-sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
+sexServer <- function(id, covid.sex, inputs, pop) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -330,22 +314,6 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
         }
       })
       
-      fgcolor <- reactive({
-        if(dark_mode()) {
-          "lightgrey"
-        } else {
-          "black"
-        }
-      })
-      
-      bgcolor <- reactive({
-        if(dark_mode()) {
-          "black"
-        } else {
-          "white"
-        }
-      })
-      
       # Sex Plotly
       output$sex <- renderPlotly({
         plot_ly(
@@ -384,11 +352,11 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
           font = list(
-            color = fgcolor()
+            color = getCurrentOutputInfo()$fg()
           ),
           hoverlabel = list(
-            bordercolor = fgcolor(),
-            bgcolor     = bgcolor()
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
           )
         ) %>% config(
           displayModeBar = FALSE,
@@ -396,7 +364,7 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
           showTips       = FALSE
         )
       }) %>% bindCache(
-        dark_mode(),
+        getCurrentOutputInfo()$fg(),
         inputs$date(),
         inputs$mode(),
         inputs$adj()
@@ -405,7 +373,7 @@ sexServer <- function(id, covid.sex, inputs, pop, dark_mode) {
   )
 }
 
-raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
+raceServer <- function(id, covid.race, inputs, pop) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -496,22 +464,6 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
         }
       })
       
-      fgcolor <- reactive({
-        if(dark_mode()) {
-          "lightgrey"
-        } else {
-          "black"
-        }
-      })
-      
-      bgcolor <- reactive({
-        if(dark_mode()) {
-          "black"
-        } else {
-          "white"
-        }
-      })
-      
       # Race Plotly
       output$race <- renderPlotly({
         plot_ly(
@@ -552,11 +504,11 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
           paper_bgcolor = "transparent",
           plot_bgcolor  = "transparent",
           font = list(
-            color = fgcolor()
+            color = getCurrentOutputInfo()$fg()
           ),
           hoverlabel = list(
-            bordercolor = fgcolor(),
-            bgcolor     = bgcolor()
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
           )
         ) %>% config(
           displayModeBar = FALSE,
@@ -564,7 +516,7 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
           showTips       = FALSE
         )
       }) %>% bindCache(
-        dark_mode(),
+        getCurrentOutputInfo()$fg(),
         inputs$date(),
         inputs$mode(),
         inputs$adj()
@@ -573,7 +525,7 @@ raceServer <- function(id, covid.race, inputs, pop, dark_mode) {
   )
 }
 
-demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop, dark_mode) {
+demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop) {
   moduleServer (
     id,
     function(input, output, session) {
@@ -589,9 +541,9 @@ demographicsServer <- function(id, covid.age, covid.race, covid.sex, pop, dark_m
       )
       
       inputs <- inputServer("input", min_date, max_date)
-      ageServer("age", covid.age, inputs, pop, dark_mode)
-      sexServer("sex", covid.sex, inputs, pop, dark_mode)
-      raceServer("race", covid.race, inputs, pop, dark_mode)
+      ageServer("age", covid.age, inputs, pop)
+      sexServer("sex", covid.sex, inputs, pop)
+      raceServer("race", covid.race, inputs, pop)
     }
   )
 }
