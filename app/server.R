@@ -59,32 +59,21 @@ rm(covid.local, pop.local)
 function(input, output, session) {
     dashboardServer("dashboard", local, covid.confd)
     byCountyServer("byCounty")
-    demographicsServer("demographics", covid.age, covid.race, covid.sex, pop, reactive(input$dark_mode))
+    demographicsServer("demographics", covid.age, covid.race, covid.sex, pop)
     
     # Theme
-    observe(
+    observeEvent(input$dark_mode, {
         session$setCurrentTheme(
             if (input$dark_mode) 
                 bs_theme_update(dark)
             else
                 bs_theme_update(light)
         )
-    )
+    })
     
     # Navigation
     autoNavigating <- reactiveVal(0)
     pageLoading    <- reactiveVal(TRUE)
-    
-    # Navigate to URL requested on page load
-    observeEvent(session$clientData$url_search, {
-        if(!pageLoading()) return()
-        pageLoading(FALSE)
-        
-        if(nchar(session$clientData$url_search) > 1) {
-            autoNavigating(autoNavigating() + 1)
-            restore(session$clientData$url_search)
-        }
-    })
     
     # Restore the Shiny app's state
     restore <- function(qs) {
@@ -107,6 +96,17 @@ function(input, output, session) {
             autoNavigating(autoNavigating() + 1)
         }
     }
+    
+    # Navigate to URL requested on page load
+    observeEvent(session$clientData$url_search, {
+        if(!pageLoading()) return()
+        pageLoading(FALSE)
+        
+        if(nchar(session$clientData$url_search) > 1) {
+            autoNavigating(autoNavigating() + 1)
+            restore(session$clientData$url_search)
+        }
+    })
     
     # Save page state to URL
     observeEvent(list(input$navbar, input$dark_mode), {
