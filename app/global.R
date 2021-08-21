@@ -14,6 +14,7 @@ pacman::p_load(
   dplyr,
   spdplyr,
   lubridate,
+  purrr,
   zoo,
   BAMMtools,
   plotly,

@@ -38,6 +38,7 @@ pop <- pop %>%
   )
 
 fwrite(pop, "DATA/pop.csv")
+rm(pop)
 
 ## Shapefile
 # https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.2019.html
@@ -45,3 +46,4 @@ fwrite(pop, "DATA/pop.csv")
 temp <- tempfile()
 download.file("https://www2.census.gov/geo/tiger/GENZ2019/shp/cb_2019_us_county_500k.zip", temp)
 unzip(temp, exdir = "DATA/shapefile")
+rm(temp)

@@ -1,6 +1,14 @@
 # DASHBOARD UI MODULES
 
 # Statistics
+statBuilder <- function(name, display) {
+  tagList(
+    h2(paste0("Total ", display, ": "), textOutput(paste0(name, ".t"), inline = TRUE)),
+    h4(textOutput(paste0(name, ".c"), inline = TRUE), "Confirmed | ",
+       textOutput(paste0(name, ".p"), inline = TRUE), "Probable")
+  )
+}
+
 statsUI <- function(id) {
   ns <- NS(id)
   
@@ -9,15 +17,15 @@ statsUI <- function(id) {
       align = 'center',
       column(
         width = 4,
-        htmlOutput(ns("cases"))
+        statBuilder(ns("cases"), "Cases")
       ),
       column(
         width = 4,
-        htmlOutput(ns("hospts"))
+        statBuilder(ns("hospts"), "Hospitilizations")
       ),
       column(
         width = 4,
-        htmlOutput(ns("deaths"))
+        statBuilder(ns("deaths"), "Deaths")
       )
     ) 
   )
@@ -34,32 +42,9 @@ mapUI <- function(id) {
     ),
     sidebarPanel(
       width = 3,
-      radioGroupButtons(
-        ns("type"),
-        label = "Type of Map",
-        choices = list(
-          "Cumulative Totals" = "total",
-          "Hotspots"          = "rate"
-        ),
-        justified = TRUE,
-        status    = "danger"
-      ),
-      htmlOutput(ns("date_ui")),
-      radioButtons(
-        ns("mode"),
-        label = "Show",
-        choices = list(
-          "Total Cases"      = ".c",
-          "Hospitalizations" = ".h",
-          "Deaths"           = ".d"
-        ),
-        selected = ".c"
-      ),
-      checkboxInput(
-        ns("adjust"),
-        label = "Adjust for population",
-        value = TRUE
-      )
+      hotspotInputUI(ns("type"), "Type of Map"),
+      dateInputUI(ns("date")),
+      targetInputUI(ns("target"))
     )
   )
 }
@@ -82,31 +67,9 @@ countyHighestUI <- function(id) {
     ),
     sidebarPanel(
       width = 3,
-      radioButtons(
-        ns("mode"),
-        label = "Show",
-        choices = list(
-          "Total Cases"      = ".c",
-          "Hospitalizations" = ".h",
-          "Deaths"           = ".d"
-        ),
-        selected = ".c"
-      ),
-      checkboxInput(
-        ns("adjust"),
-        label = "Adjust for population",
-        value = TRUE
-      ),
-      radioButtons(
-        ns("rank"),
-        label = "Rank by",
-        choices = list(
-          "Total"      = "total",
-          "Daily Rate" = "rate"
-        ),
-        selected = "rate"
-      ),
-      htmlOutput(ns("list"))
+      hotspotInputUI(ns("rank"), "Rank By"),
+      targetInputUI(ns("mode")),
+      countyInputUI(ns("county"))
     )
   )
 }

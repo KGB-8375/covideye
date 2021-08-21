@@ -22,9 +22,9 @@ Send suggestions to rvanathanrowan@gmail.com or make a GitHub issue.
 
 ----------------------------
 
- - **Nathan Rowan**, Project Manager
+ - **Nathan Rowan**, Project Manager & Lead Developer
     - Sophomore at VCU
     - Computer Engineering Undergrad
- - **Duncan Fernandez**, Co-author
+ - **Duncan Fernandez**, Developer
     - Sophomore at Reynolds
     - Computer Engineering Undergrad
