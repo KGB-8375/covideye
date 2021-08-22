@@ -21,9 +21,15 @@ statsServer <- function(id, covid.confd) {
         select(cases.c:deaths.t) %>%
         map(fancy_num)
       
-      for(i in names(stats)) {
-        output[[i]] <- renderText(stats[[i]])
-      }
+      output$cases.t  <- renderText(stats$cases.t)
+      output$cases.c  <- renderText(stats$cases.c)
+      output$cases.p  <- renderText(stats$cases.p)
+      output$hospts.t <- renderText(stats$hospts.t)
+      output$hospts.c <- renderText(stats$hospts.c)
+      output$hospts.p <- renderText(stats$hospts.p)
+      output$deaths.t <- renderText(stats$deaths.t)
+      output$deaths.c <- renderText(stats$deaths.c)
+      output$deaths.p <- renderText(stats$deaths.p)
     }
   )
 }

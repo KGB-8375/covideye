@@ -27,7 +27,7 @@ statsUI <- function(id) {
         width = 4,
         statBuilder(ns("deaths"), "Deaths")
       )
-    ) 
+    )
   )
 }
 
