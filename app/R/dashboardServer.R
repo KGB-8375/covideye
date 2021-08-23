@@ -399,24 +399,15 @@ countyHighestServer <- function(id, covid.local) {
       mode   <- targetInputServer("mode")
       county <- countyInputServer("county", reactive(rank_list()$local))
       
-      # Prepare data 
-      pop <- covid.local %>%
-        slice_max(date) %>%
-        select(pop) %>%
-        sum()
-      
+      # State Average Data
       covid.va <- covid.local %>%
         group_by(date) %>%
         summarise(fips = 51000, local = "Virginia", across(total.c:pop, ~sum(.x))) %>%
         mutate(
-          total.c.adj = total.c * 100000 / pop,
-          total.h.adj = total.h * 100000 / pop,
-          total.d.adj = total.d * 100000 / pop,
-          rate.c.adj  = rate.c  * 100000 / pop,
-          rate.h.adj  = rate.h  * 100000 / pop,
-          rate.d.adj  = rate.d  * 100000 / pop
+          across(total.c:pop, ~.x * 100000 / pop, .names = "{.col}.adj")
         )
       
+      # Calculate target column
       target <- reactive({
         paste0(
           type(), ".", mode$mode(), if(mode$adjust()) {".adj"}
@@ -469,9 +460,11 @@ countyHighestServer <- function(id, covid.local) {
           ),
           switch(
             mode$mode(),
-            "c" = "Cases",
-            "h" = "Hospitalizations",
-            "d" = "Deaths"
+            "c"  = "Cases",
+            "h"  = "Hospitalizations",
+            "d"  = "Deaths",
+            "1d" = "Vaccinations (1+ Doses)",
+            "fv" = "Vaccinations (Full)"
           ),
           "in",
           county(),
@@ -488,9 +481,11 @@ countyHighestServer <- function(id, covid.local) {
         paste(
           switch(
             mode$mode(),
-            "c" = "Cases",
-            "h" = "Hospitalizations",
-            "d" = "Deaths"
+            "c"  = "Cases",
+            "h"  = "Hospitalizations",
+            "d"  = "Deaths",
+            "1d" = "Vaccinations (1+ Doses)",
+            "fv" = "Vaccinations (Full)"
           ),
           if(mode$adjust()) {
             "per 100k"
@@ -509,6 +504,14 @@ countyHighestServer <- function(id, covid.local) {
         )
       })
       
+      line_col <- reactive({
+        if(mode$mode() == "1d" | mode$mode() == "fv") {
+          "lawngreen"
+        } else {
+          "red"
+        }
+      })
+      
       output$chart <- renderPlotly({
         req(county() != "Placeholder")
 
@@ -521,7 +524,7 @@ countyHighestServer <- function(id, covid.local) {
           y    = ~target.co,
           name = county(),
           line = list(
-            color = "red",
+            color = line_col(),
             shape = "spline"
           )
         ) %>% add_lines (
