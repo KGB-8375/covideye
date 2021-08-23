@@ -302,9 +302,10 @@ sexServer <- function(id, covid.sex, inputs, pop) {
       # Sex Plotly
       output$sex <- renderPlotly({
         plot_ly(
-          x = ~date_sel()$sex,
-          y = ~target(),
+          x = ~target(),
+          y = ~date_sel()$sex,
           type = "bar",
+          orientation = "h",
           marker = list(
             color = c(
               'rgb(237, 119, 215)',
