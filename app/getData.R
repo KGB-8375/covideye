@@ -19,7 +19,7 @@ pop <- read.socrata("https://data.virginia.gov/resource/5s4f-hthh.json")
 pop <- pop %>%
   slice_max(year) %>%
   transmute(
-    fips  = fips,
+    fips  = as.integer(fips),
     local = locality,
     ages  = age_group,
     sex   = sex,

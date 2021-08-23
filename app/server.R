@@ -20,6 +20,7 @@ covid.confd <- fread("DATA/temp/covid_confd.csv")
 covid.age   <- fread("DATA/temp/covid_age.csv")
 covid.race  <- fread("DATA/temp/covid_race.csv")
 covid.sex   <- fread("DATA/temp/covid_sex.csv")
+vaccn.local <- fread("DATA/temp/vaccn_local.csv")
 pop         <- fread("DATA/pop.csv")
 local       <- readOGR(
     dsn   = "./DATA/shapefile",
@@ -40,20 +41,25 @@ local <- local %>%
     # Only VA
     filter(STATEFP == "51") %>%
     # Extract fips (other data isn't useful)
-    transmute(fips = as.numeric(GEOID)) %>%
+    transmute(fips = as.integer(GEOID)) %>%
     inner_join(covid.local, by = "fips") %>%
+    inner_join(vaccn.local, by = c("fips", "date", "local")) %>%
     inner_join(pop.local,   by = "fips") %>%
     # Create population adjusted vars
     mutate(
-        total.c.adj = total.c * 100000 / pop,
-        total.h.adj = total.h * 100000 / pop,
-        total.d.adj = total.d * 100000 / pop,
-        rate.c.adj  = rate.c  * 100000 / pop,
-        rate.h.adj  = rate.h  * 100000 / pop,
-        rate.d.adj  = rate.d  * 100000 / pop
+        total.c.adj  = total.c  * 100000 / pop,
+        total.h.adj  = total.h  * 100000 / pop,
+        total.d.adj  = total.d  * 100000 / pop,
+        total.1d.adj = total.1d * 100000 / pop,
+        total.fv.adj = total.fv * 100000 / pop,
+        rate.c.adj   = rate.c   * 100000 / pop,
+        rate.h.adj   = rate.h   * 100000 / pop,
+        rate.d.adj   = rate.d   * 100000 / pop,
+        rate.1d.adj  = rate.1d  * 100000 / pop,
+        rate.fv.adj  = rate.fv  * 100000 / pop
     )
 
-rm(covid.local, pop.local)
+rm(covid.local, pop.local, vaccn.local)
 
 # Main server functionality for website
 function(input, output, session) {
@@ -64,7 +70,7 @@ function(input, output, session) {
     # Theme
     observeEvent(input$dark_mode, {
         session$setCurrentTheme(
-            if (input$dark_mode) 
+            if (input$dark_mode)
                 bs_theme_update(dark)
             else
                 bs_theme_update(light)

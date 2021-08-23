@@ -59,9 +59,11 @@ targetInputUI <- function(id) {
       ns("mode"),
       "Show",
       choices = list(
-        "Cases"            = "c",
-        "Hospitilizations" = "h",
-        "Deaths"           = "d"
+        "Cases"                   = "c",
+        "Hospitilizations"        = "h",
+        "Deaths"                  = "d",
+        "Vaccinations (1+ Doses)" = "1d",
+        "Vaccinations (Full)"     = "fv"
       ),
       selected = "c",
       status   = "danger"

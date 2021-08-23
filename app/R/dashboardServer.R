@@ -98,9 +98,11 @@ mapServer <- function(id, local) {
           ),
           switch(
             target$mode(),
-            c = "Cases",
-            h = "Hospitalizations",
-            d = "Deaths"
+            `c`  = "Cases",
+            `h`  = "Hospitalizations",
+            `d`  = "Deaths",
+            `1d` = "Vaccinations (1+ Doses)",
+            `fv` = "Vaccinations (Full)"
           ),
           if(target$adjust()) {
             "per 100k"
@@ -122,9 +124,11 @@ mapServer <- function(id, local) {
       color <- reactive({
         switch(
           target$mode(),
-          c = "YlOrRd",
-          h = "Purples",
-          d = "Greys"
+          `c`  = "YlOrRd",
+          `h`  = "Purples",
+          `d`  = "Greys",
+          `1d` = "Greens",
+          `fv` = "Greens"
         )
       })
       
@@ -169,11 +173,15 @@ mapServer <- function(id, local) {
             Total Cases: %s (%s / 100k)</br>
             Total Hospitalizations: %s (%s / 100k)</br>
             Total Deaths: %s (%s / 100k)</br>
+            Total Paritally Vaccinated: %s (%s / 100k)</br>
+            Total Fully Vaccinations: %s (%s / 100k)</br>
             Population: %s",
             date_sel()$local, format(date_sel()$date, "%D"),
-            fancy_num(date_sel()$total.c), fancy_num(date_sel()$total.c.adj),
-            fancy_num(date_sel()$total.h), fancy_num(date_sel()$total.h.adj),
-            fancy_num(date_sel()$total.d), fancy_num(date_sel()$total.d.adj),
+            fancy_num(date_sel()$total.c),  fancy_num(date_sel()$total.c.adj),
+            fancy_num(date_sel()$total.h),  fancy_num(date_sel()$total.h.adj),
+            fancy_num(date_sel()$total.d),  fancy_num(date_sel()$total.d.adj),
+            fancy_num(date_sel()$total.1d), fancy_num(date_sel()$total.1d.adj),
+            fancy_num(date_sel()$total.fv), fancy_num(date_sel()$total.fv.adj),
             fancy_num(date_sel()$pop)
           ) %>%
             lapply(HTML)
@@ -183,11 +191,15 @@ mapServer <- function(id, local) {
             Daily Cases: %s (%s / 100k)</br>
             Daily Hospitalizations: %s (%s / 100k)</br>
             Daily Deaths: %s (%s / 100k)</br>
+            Daily Vaccinations (1st Dose): %s (%s / 100k)</br>
+            Daily Vaccinations (Final Dose): %s (%s / 100k)</br>
             Population: %s",
             date_sel()$local, format(date_sel()$date, "%D"),
-            fancy_num(date_sel()$rate.c), fancy_num(date_sel()$rate.c.adj),
-            fancy_num(date_sel()$rate.h), fancy_num(date_sel()$rate.h.adj),
-            fancy_num(date_sel()$rate.d), fancy_num(date_sel()$rate.d.adj),
+            fancy_num(date_sel()$rate.c),  fancy_num(date_sel()$rate.c.adj),
+            fancy_num(date_sel()$rate.h),  fancy_num(date_sel()$rate.h.adj),
+            fancy_num(date_sel()$rate.d),  fancy_num(date_sel()$rate.d.adj),
+            fancy_num(date_sel()$rate.1d), fancy_num(date_sel()$rate.1d.adj),
+            fancy_num(date_sel()$rate.fv), fancy_num(date_sel()$rate.fv.adj),
             fancy_num(date_sel()$pop)
           ) %>%
             lapply(HTML)

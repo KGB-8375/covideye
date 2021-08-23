@@ -7,6 +7,7 @@ pacman::p_load(
   data.table,
   dplyr,
   stringr,
+  tidyr,
   zoo
 )
 
@@ -22,7 +23,7 @@ covid.local <- covid.local %>%
   # Fix Data Types
   transmute(
     date   = as.Date(report_date),
-    fips   = fips,
+    fips   = as.integer(fips),
     local  = locality,
     total.c  = as.numeric(total_cases),
     total.h = as.numeric(hospitalizations),
@@ -168,3 +169,50 @@ covid.sex <- covid.sex %>%
 
 fwrite(covid.sex, "DATA/temp/covid_sex.csv")
 rm(covid.sex)
+
+## Vaccines by Locality
+# https://data.virginia.gov/dataset/VDH-COVID-19-PublicUseDataset-Vaccines-DosesAdmini/28k2-x2rj
+
+vaccn.local <- read.socrata("https://data.virginia.gov/resource/28k2-x2rj.json")
+
+vaccn.local <- vaccn.local %>%
+  # Remove unnecessary rows
+  filter(fips != "Out of State" & fips != "Not Reported") %>%
+  # Fix Data Types
+  transmute(
+    date   = as.Date(administration_date),
+    fips   = as.integer(fips),
+    local  = locality,
+    make   = vaccine_manufacturer,
+    dose   = as.numeric(dose_number),
+    rate.v = as.numeric(vaccine_doses_administered)
+  ) %>%
+  # Remove unneeded columns
+  group_by(date, fips, local, make, dose) %>%
+  summarize(rate.v = sum(rate.v)) %>%
+  ungroup() %>%
+  # Add missing rows of data
+  complete(date, nesting(fips, local, make, dose), fill = list(rate.v = 0)) %>%
+  # Calculate first dose vs fully vaccinated
+  mutate(
+    rate.1d = if_else(dose == 1, rate.v, 0),
+    rate.fv = if_else(dose == 2 | make == "J&J", rate.v, 0)
+  ) %>%
+  # Calculate totals
+  group_by(fips, make, dose) %>%
+  arrange(date) %>%
+  mutate(
+    total.1d = cumsum(rate.1d),
+    total.fv = cumsum(rate.fv)
+  ) %>%
+  # Remove unneeded columns & collapse rows
+  group_by(fips, local, date) %>%
+  summarize(
+    rate.1d  = sum(rate.1d),
+    rate.fv  = sum(rate.fv),
+    total.1d = sum(total.1d),
+    total.fv = sum(total.fv)
+  )
+
+fwrite(vaccn.local, "DATA/temp/vaccn_local.csv")
+rm(vaccn.local)
