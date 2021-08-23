@@ -90,3 +90,11 @@ countyInputUI <- function(id) {
     choices = c("Placeholder")
   )
 }
+
+withGraphSpinner <- function(ui_element) {
+  withSpinner(
+    ui_element,
+    type  = 8,
+    color = "red"
+  )
+}

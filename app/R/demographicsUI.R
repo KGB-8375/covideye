@@ -4,21 +4,24 @@
 ageUI <- function(id) {
   ns <- NS(id)
   
-  plotlyOutput(ns("age"))
+  plotlyOutput(ns("age")) %>%
+    withGraphSpinner()
 }
 
 # Sex
 sexUI <- function(id) {
   ns <- NS(id)
   
-  plotlyOutput(ns("sex"))
+  plotlyOutput(ns("sex")) %>%
+    withGraphSpinner()
 }
 
 # Race
 raceUI <- function(id) {
   ns <- NS(id)
   
-  plotlyOutput(ns("race"))
+  plotlyOutput(ns("race")) %>%
+    withGraphSpinner()
 }
 
 # MAIN UI

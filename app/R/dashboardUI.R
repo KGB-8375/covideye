@@ -38,7 +38,8 @@ mapUI <- function(id) {
   sidebarLayout(
     mainPanel(
       width = 9,
-      leafletOutput(ns("map"))
+      leafletOutput(ns("map")) %>%
+        withGraphSpinner()
     ),
     sidebarPanel(
       width = 3,
@@ -53,7 +54,8 @@ mapUI <- function(id) {
 dailyRatesUI <- function(id) {
   ns <- NS(id)
   
-  plotlyOutput(ns("rates"))
+  plotlyOutput(ns("rates")) %>%
+    withGraphSpinner()
 }
 
 # Display county with the highest XYZ
@@ -63,7 +65,8 @@ countyHighestUI <- function(id) {
   sidebarLayout(
     mainPanel(
       width = 9,
-      plotlyOutput(ns("chart"))
+      plotlyOutput(ns("chart")) %>%
+        withGraphSpinner()
     ),
     sidebarPanel(
       width = 3,

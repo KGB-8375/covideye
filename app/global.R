@@ -19,7 +19,8 @@ pacman::p_load(
   BAMMtools,
   plotly,
   leaflet,
-  htmltools
+  htmltools,
+  shinycssloaders
 )
 
 # Theming
