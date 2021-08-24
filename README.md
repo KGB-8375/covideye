@@ -1,7 +1,9 @@
 # CovidEye
 CovidEye is an web application that displays COVID-19 data for the state of Virginia. It is designed to be as user friendly and feature-rich as possible while maintaining a streamlined appearance.
 
-![screenshot](./Screenshot.png)
+![screenshot](Screenshot.png)
+
+![logo](covideye-main.svg)
 
 ## Development
 The project uses R shiny as the base framework. This allows us to create an interactive and visually appealing site with minimal handwritten HTML, CSS, and JS.

@@ -15,9 +15,10 @@ tagList(
     useShinyjs(),
     extendShinyjs(script = "navigate.js", functions = c("updateHistory")),
     tags$head(tags$script(src = "matomo.js")),
+    tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
     
     navbarPageWithInputs(
-        title       = "CovidEye",
+        title       = div(img(src="favicon.png", height = "30", style = "margin-right:5px"), "CovidEye"),
         windowTitle = "CovidEye",
         theme       = light,
         id          = "navbar",

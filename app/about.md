@@ -1,4 +1,4 @@
-# About Us
+# About Us <img src="favicon.png" alt="covideye-logo" height="50">
 
 ----------------------------
 
