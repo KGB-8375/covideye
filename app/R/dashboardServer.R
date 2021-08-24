@@ -569,7 +569,8 @@ countyHighestServer <- function(id, covid.local) {
           displayModeBar = FALSE,
           displaylogo    = FALSE,
           showTips       = FALSE
-        )
+        ) %>%
+          rangeslider()
       }) %>% bindCache(
         getCurrentOutputInfo()$fg(),
         target(),
