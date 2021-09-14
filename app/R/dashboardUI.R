@@ -50,8 +50,16 @@ mapUI <- function(id) {
   )
 }
 
-# State-wide daily rates
-dailyRatesUI <- function(id) {
+# State-wide daily infection rates
+dailyInfectionsUI <- function(id) {
+  ns <- NS(id)
+  
+  plotlyOutput(ns("rates")) %>%
+    withGraphSpinner()
+}
+
+# State-wide daily vaccination rates
+dailyVaccinationsUI <- function(id) {
   ns <- NS(id)
   
   plotlyOutput(ns("rates")) %>%
@@ -92,7 +100,9 @@ dashboardUI <- function(id) {
     mapUI(ns("map")),
     hr(),
     # Daily Rates
-    dailyRatesUI(ns("rates")),
+    dailyInfectionsUI(ns("cases")),
+    hr(),
+    dailyVaccinationsUI(ns("vaxs")),
     hr(),
     ## County with the highest cases/rates
     countyHighestUI(ns("highest"))

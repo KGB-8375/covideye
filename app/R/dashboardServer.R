@@ -296,8 +296,8 @@ mapServer <- function(id, local) {
   )
 }
 
-# State-wide daily rates
-dailyRatesServer <- function(id, covid.confd) {
+# State-wide Infection rates
+dailyInfectionsServer <- function(id, covid.confd) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -333,7 +333,7 @@ dailyRatesServer <- function(id, covid.confd) {
           # Extra settings
         ) %>% layout (
           title  = list(
-            text = "Daily Virginia COVID-19 Rates",
+            text = "Daily Virginia COVID-19 Infection Rates",
             font = list(size = 20)
           ),
           legend = list(
@@ -385,6 +385,94 @@ dailyRatesServer <- function(id, covid.confd) {
           rangeslider()
       }) %>%
         bindCache(getCurrentOutputInfo()$fg())
+    }
+  )
+}
+
+# State-wide Vaccination rates
+dailyVaccinesServer <- function(id, covid.local) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+      # Prepare Data
+      vaxs <- covid.local %>%
+        group_by(date) %>%
+        summarize(rate.1d = sum(rate.1d), rate.fv = sum(rate.fv))
+      
+      output$rates <- renderPlotly({
+        plot_ly(
+          vaxs,
+          hovertemplate = "%{y:,.0f}",
+          x             = ~date
+        ) %>% add_lines (
+          # Daily First Dose
+          line    = list(
+            color = "limegreen",
+            shape = "spline"
+          ),
+          y       = ~rate.1d,
+          name    = "First Dose"
+        ) %>% add_lines (
+          # Daily Final Dose
+          line    = list(
+            color = "darkgreen",
+            shape = "spline"
+          ),
+          y       = ~rate.fv,
+          name    = "Final Dose"
+        )%>% layout (
+          title  = list(
+            text = "Daily Virginia COVID-19 Vaccination Rates",
+            font = list(size = 20)
+          ),
+          legend = list(
+            x           = 0.01,
+            y           = 1,
+            bgcolor     = "transparent",
+            bordercolor = "transparent"
+          ),
+          xaxis = list(
+            title          = "Date",
+            showgrid       = TRUE,
+            gridcolor      = getCurrentOutputInfo()$bg(),
+            gridwidth      = 2,
+            fixedrange     = TRUE,
+            showspikes     = TRUE,
+            spikethickness = 2,
+            spikedash      = 'dot',
+            spikecolor     = "darkgrey",
+            spikemode      = 'across'
+          ),
+          yaxis = list(
+            title      = "Cases",
+            fixedrange = TRUE,
+            showgrid   = TRUE,
+            gridcolor  = getCurrentOutputInfo()$bg(),
+            gridwidth  = 2,
+            dtick      = 20000
+          ),
+          hoverlabel = list(
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
+          ),
+          margin = list(t = 50),
+          barmode       = 'group',
+          hovermode     = 'x unified',
+          hoverdistance = 1,
+          spikedistance = 1000,
+          paper_bgcolor = "transparent",
+          plot_bgcolor  = thematic_get_mixture(0.05),
+          font = list(
+            color = getCurrentOutputInfo()$fg(),
+            size  = 14
+          )
+        ) %>% config (
+          displayModeBar = FALSE,
+          displaylogo    = FALSE,
+          showTips       = FALSE
+        ) %>%
+          rangeslider()
+      })
     }
   )
 }
@@ -505,11 +593,14 @@ countyHighestServer <- function(id, covid.local) {
       })
       
       line_col <- reactive({
-        if(mode$mode() == "1d" | mode$mode() == "fv") {
-          "lawngreen"
-        } else {
-          "red"
-        }
+        switch(
+          mode$mode(),
+          "c"  = "red",
+          "h"  = "blue",
+          "d"  = "gray",
+          "1d" = "limegreen",
+          "fv" = "darkgreen"
+        )
       })
       
       output$chart <- renderPlotly({
@@ -584,7 +675,8 @@ countyHighestServer <- function(id, covid.local) {
           displayModeBar = FALSE,
           displaylogo    = FALSE,
           showTips       = FALSE
-        )
+        ) %>%
+          rangeslider()
       }) %>% bindCache(
         getCurrentOutputInfo()$fg(),
         target(),
@@ -600,7 +692,8 @@ dashboardServer <- function(id, local, covid.confd) {
     function(input, output, session) {
       statsServer("stats", covid.confd)
       mapServer("map", local)
-      dailyRatesServer("rates", covid.confd)
+      dailyInfectionsServer("cases", covid.confd)
+      dailyVaccinesServer("vaxs", local@data)
       countyHighestServer("highest", local@data)
     }
   )
