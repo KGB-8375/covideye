@@ -4,8 +4,8 @@
 navbarPageWithInputs <- function(..., inputs) {
     navbar <- navbarPage(...)
     form <- tags$form(class = "navbar-form", inputs)
-    navbar[[4]][[1]]$children[[1]] <- tagAppendChild(
-        navbar[[4]][[1]]$children[[1]], form
+    navbar[[5]][[1]]$children[[1]] <- tagAppendChild(
+        navbar[[5]][[1]]$children[[1]], form
     )
     navbar
 }
