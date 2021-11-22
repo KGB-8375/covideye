@@ -477,6 +477,82 @@ dailyVaccinesServer <- function(id, covid.local) {
   )
 }
 
+# State-wide Vaccination pie
+vaccinationsPieServer <- function(id, covid.local) {
+  moduleServer(
+    id,
+    function(input, output, session) {
+      # Prepare data
+      vaxs <- covid.local %>%
+        slice_max(date) %>%
+        transmute(
+          local,
+          pop      = pop - total.1d,
+          total.1d = total.1d - total.fv,
+          total.fv
+        ) %>%
+        arrange(local) %>%
+        add_row(
+          local = "Virginia",
+          pop = sum(.$pop),
+          total.1d = sum(.$total.1d),
+          total.fv = sum(.$total.fv),
+          .before = 1
+        ) %>%
+        rename(
+          `Unvaccinated`     = pop,
+          `One Dose`         = total.1d,
+          `Fully Vaccinated` = total.fv
+        ) %>%
+        pivot_longer(!local, names_to = "label", values_to = "val")
+      
+      # Widget Server
+      county <- countyInputServer("county", reactiveVal(unique(vaxs$local)))
+      
+      # County Selection
+      county_data <- reactive({
+        req(county)
+        
+        vaxs %>%
+          filter(local == county())
+      })
+      
+      output$pie <- renderPlotly({
+        plot_ly(
+          county_data(),
+          labels = ~label,
+          values = ~val,
+          type   = "pie",
+          textposition   = 'inside',
+          textinfo       = 'label+percent',
+          insidetextfont = list(
+            color = getCurrentOutputInfo()$fg()
+          ),
+          hovertemplate = "%{y:,.0f}",
+          marker        = list(
+            colors  = c('grey', 'limegreen', 'darkgreen'),
+            line    = list(
+              color = 'white'
+            )
+          ),
+          showlegend = FALSE
+        ) %>% layout(
+          title = paste("Vaccination in", county()),
+          paper_bgcolor = "transparent",
+          plot_bgcolor  = "transparent",
+          font = list(
+            color = getCurrentOutputInfo()$fg()
+          ),
+          hoverlabel = list(
+            bordercolor = getCurrentOutputInfo()$fg(),
+            bgcolor     = getCurrentOutputInfo()$bg()
+          )
+        )
+      })
+    }
+  )
+}
+
 # Display county with the highest XYZ
 countyHighestServer <- function(id, covid.local) {
   moduleServer(
@@ -694,6 +770,7 @@ dashboardServer <- function(id, local, covid.confd) {
       mapServer("map", local)
       dailyInfectionsServer("cases", covid.confd)
       dailyVaccinesServer("vaxs", local@data)
+      vaccinationsPieServer("pie", local@data)
       countyHighestServer("highest", local@data)
     }
   )

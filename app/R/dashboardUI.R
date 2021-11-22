@@ -66,6 +66,22 @@ dailyVaccinationsUI <- function(id) {
     withGraphSpinner()
 }
 
+vaccinationsPieUI <- function(id) {
+  ns <- NS(id)
+  
+  fluidRow(
+    column(width = 4),
+    column(
+      width = 4,
+      plotlyOutput(ns("pie")) %>%
+        withGraphSpinner(),
+      wellPanel(
+        countyInputUI(ns("county"))
+      )
+    )
+  )
+}
+
 # Display county with the highest XYZ
 countyHighestUI <- function(id) {
   ns <- NS(id)
@@ -104,7 +120,10 @@ dashboardUI <- function(id) {
     hr(),
     dailyVaccinationsUI(ns("vaxs")),
     hr(),
-    ## County with the highest cases/rates
+    # Vaccinated Pie Chart
+    vaccinationsPieUI(ns("pie")),
+    hr(),
+    # County with the highest cases/rates
     countyHighestUI(ns("highest"))
   )
 }
